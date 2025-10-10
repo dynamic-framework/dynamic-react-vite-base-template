@@ -14,7 +14,8 @@
     "push:publish": "npm run build && npx @modyo/cli@3.5.4 push --publish",
     "stylelint": "stylelint 'src/**/*.css' 'src/**/*.scss' --rd",
     "lint-staged": "lint-staged",
-    "commitlint": "commitlint --edit"
+    "commitlint": "commitlint --edit",
+    "prepare": "husky"
   },
   "dependencies": {
     "@dynamic-framework/ui-react": "^1.36.2",
@@ -38,6 +39,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.4.0",
+    "husky": "^9.1.7",
     "lint-staged": "^16.2.3",
     "sass-embedded": "^1.93.2",
     "stylelint": "^16.25.0",
