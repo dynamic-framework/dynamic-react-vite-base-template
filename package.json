@@ -13,7 +13,8 @@
     "push:debug": "npm run build && DEBUG=* npx @modyo/cli@3.5.4 push",
     "push:publish": "npm run build && npx @modyo/cli@3.5.4 push --publish",
     "stylelint": "stylelint 'src/**/*.css' 'src/**/*.scss' --rd",
-    "lint-staged": "lint-staged"
+    "lint-staged": "lint-staged",
+    "commitlint": "commitlint --edit"
   },
   "dependencies": {
     "@dynamic-framework/ui-react": "^1.36.2",
@@ -26,6 +27,8 @@
     "react-i18next": "~13.3.1"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
     "@eslint/js": "^9.36.0",
     "@types/node": "^24.6.0",
     "@types/react": "^18.0.0",
