@@ -1,10 +1,21 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
+import { DContextProvider } from '@dynamic-framework/ui-react';
+import React, { StrictMode } from 'react';
+import ReactDOM from 'react-dom/client';
 
-createRoot(document.getElementById('root')!).render(
+import './config/i18nConfig';
+
+import App from './App';
+
+import '@dynamic-framework/ui-react/dist/css/dynamic-ui.css';
+import './styles/base.scss';
+
+const root = ReactDOM.createRoot(document.getElementById('widgetName') as Element);
+root.render(
   <StrictMode>
-    <App />
+    <DContextProvider>
+      <App />
+    </DContextProvider>
   </StrictMode>,
-)
+);
+
+console.log(`React version (${React.version})`);

@@ -1,0 +1,15 @@
+{
+  "site": {
+    "name": "My Site",
+    "language": "en",
+    "url": "https://un.modyo.cloud/testing"
+  },
+  "vars": {
+    "currency-symbol": "$",
+    "currency-precision": 2,
+    "currency-separator": ".",
+    "currency-decimal": ",",
+    "dashboard-path": "#",
+    "other-var": "Some value"
+  }
+}

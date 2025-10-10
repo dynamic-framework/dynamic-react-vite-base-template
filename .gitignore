@@ -22,3 +22,17 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+.yalc
+yalc.lock
+
+.env
+
+# build directories
+build
+dist
+
+# modyo-cli artifacts
+.zip
+widget*.zip
+.debug

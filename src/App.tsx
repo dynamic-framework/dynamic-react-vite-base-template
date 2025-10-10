@@ -1,17 +1,24 @@
-import { useState } from 'react'
-import './App.css'
+import {
+  DCard,
+  useDContext
+} from '@dynamic-framework/ui-react';
+import { useEffect } from 'react';
+
+import MyComponent from './components/MyComponent';
+import { CONTEXT_CONFIG } from './config/widgetConfig';
 
 export default function App() {
-  const [count, setCount] = useState(0)
+  const { setContext } = useDContext();
+
+  useEffect(() => {
+    setContext(CONTEXT_CONFIG);
+  }, [setContext]);
 
   return (
-    <>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-      </div>
-    </>
-  )
+    <DCard className="container my-md-14">
+      <DCard.Body className="d-flex flex-column gap-4 p-4 p-md-14">
+        <MyComponent />
+      </DCard.Body>
+    </DCard>
+  );
 }

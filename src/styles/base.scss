@@ -1,0 +1,9 @@
+// @use "@dynamic-framework/ui-react/src/style/abstracts/_+import" as df;
+
+.widget-name {
+  background-color: rgb(var(--bs-secondary-soft-rgb));
+
+  // or
+  // background-color: rga(var(--#{df.$prefix}secondary-soft-rgb));
+  // Add here your own styles only for this widget
+}
