@@ -1,6 +1,6 @@
 import * as DynamicFramework from '@dynamic-framework/ui-react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
 import App from '../src/App';
 import { CONTEXT_CONFIG } from '../src/config/widgetConfig';
@@ -25,7 +25,7 @@ describe('<App />', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (DynamicFramework.useDContext as vi.Mock).mockReturnValue({
+    (DynamicFramework.useDContext as Mock).mockReturnValue({
       setContext: setContextMock,
     });
   });
