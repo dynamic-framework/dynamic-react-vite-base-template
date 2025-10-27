@@ -1,13 +1,16 @@
 /// <reference types="vitest" />
+
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
 import svgr from 'vite-plugin-svgr';
+import { transformDynamicImports } from './plugins/transformDynamicImports';
 
 export default defineConfig({
   plugins: [
     svgr(),
     react(),
+    transformDynamicImports()
   ],
   resolve: {
     alias: {
@@ -26,22 +29,21 @@ export default defineConfig({
     },
   },
   build: {
+    cssCodeSplit: false,
     chunkSizeWarningLimit: 2000,
-    minify: 'esbuild',
     outDir: 'build',
     assetsDir: '',
     rollupOptions: {
       output: {
         entryFileNames: 'main.js',
-        chunkFileNames: '[name].[hash].chunk.js',
+        chunkFileNames: '[name].chunk.js',
         assetFileNames: (assetInfo) => {
-          if (assetInfo.names.includes('.css')) {
-            return 'main.css'
+          if (assetInfo.name?.endsWith('.css')) {
+            return 'main.css';
           }
-          return '[name].[ext]'
+          return '[name].[ext]';
         },
-        format: 'es'
-      }
+      },
     }
   },
   test: {
