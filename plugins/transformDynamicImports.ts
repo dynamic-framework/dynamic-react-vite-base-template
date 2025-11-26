@@ -24,6 +24,30 @@ export interface TransformDynamicImportsOptions {
    * @default false
    */
   enableSourceMap?: boolean;
+
+  /**
+   * Widget placeholder used in resource base path
+   * @default '{{widget.wid}}'
+   */
+  widgetPlaceholder?: string;
+
+  /**
+   * Pattern for chunk file extension to match
+   * @default '.chunk.js'
+   */
+  chunkFilePattern?: string;
+
+  /**
+   * Entry file name pattern to transform static imports from
+   * @default 'main.js'
+   */
+  entryFileName?: string;
+
+  /**
+   * Template for static import URL replacement
+   * @default '{{site.url}}/widget_manager/{{widget.wid}}/{{widget.version}}.js'
+   */
+  staticImportUrlTemplate?: string;
 }
 
 /**
@@ -63,6 +87,10 @@ export function transformDynamicImports(
     resourceBaseVar = defaultResourceBaseVar,
     entryNamePredicate = defaultEntryNamePredicate,
     enableSourceMap = false,
+    widgetPlaceholder = '{{widget.wid}}',
+    chunkFilePattern = '.chunk.js',
+    entryFileName = 'main.js',
+    staticImportUrlTemplate = '{{site.url}}/widget_manager/{{widget.wid}}/{{widget.version}}.js',
   } = options;
 
   return {
@@ -93,7 +121,12 @@ export function transformDynamicImports(
         // - Single quotes, double quotes, or backticks
         // - Optional whitespace around the path
         // - Captures the quote type to ensure matching pairs
-        const dynamicImportRegex = /import\(\s*([`'"])(\.\/[^`'"()]+?\.chunk\.js)\1\s*\)/g;
+        // Escape special regex characters in chunkFilePattern
+        const escapedChunkPattern = chunkFilePattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const dynamicImportRegex = new RegExp(
+          `import\\(\\s*([\\x60'"])(\\.\\/[^\\x60'"()]+?${escapedChunkPattern})\\1\\s*\\)`,
+          'g'
+        );
         
         let match: RegExpExecArray | null;
         while ((match = dynamicImportRegex.exec(chunk.code)) !== null) {
@@ -104,8 +137,10 @@ export function transformDynamicImports(
           
           // Generate SSR-safe replacement
           // Uses typeof guard to prevent window access in SSR contexts
-          // TODO: Add sanitization for resourceBasePath to prevent path manipulation
-          const resourceBaseRef = resourceBaseVar('{{widget.wid}}');
+          // TODO: Add sanitization/validation for resourceBasePath at runtime to prevent 
+          // path traversal attacks if the global variable can be user-influenced.
+          // Consider implementing: path normalization, allowlist checking, or CSP headers.
+          const resourceBaseRef = resourceBaseVar(widgetPlaceholder);
           const replacement = `import(((typeof window !== 'undefined' && window) ? ${resourceBaseRef} : '') + ${quote}${chunkName}${quote})`;
           
           s.overwrite(match.index, match.index + fullMatch.length, replacement);
@@ -115,14 +150,19 @@ export function transformDynamicImports(
         // Pattern 2: Transform static imports from entry file
         // Matches: from "./main.js", from './main.js', from `./main.js`
         // Handles optional whitespace between 'from' and the quote
-        const staticImportRegex = /from\s*([`'"])\.\/main\.js\1/g;
+        // Escape special regex characters in entryFileName
+        const escapedEntryFile = entryFileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const staticImportRegex = new RegExp(
+          `from\\s*([\\x60'"])\\.\\/${escapedEntryFile}\\1`,
+          'g'
+        );
         
         while ((match = staticImportRegex.exec(chunk.code)) !== null) {
           const fullMatch = match[0];
           const quote = match[1];
           
           // Replace with templated URL for widget versioning
-          const replacement = `from ${quote}{{site.url}}/widget_manager/{{widget.wid}}/{{widget.version}}.js${quote}`;
+          const replacement = `from ${quote}${staticImportUrlTemplate}${quote}`;
           
           s.overwrite(match.index, match.index + fullMatch.length, replacement);
           transformCount++;
