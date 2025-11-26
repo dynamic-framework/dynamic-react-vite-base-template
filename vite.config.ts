@@ -3,11 +3,13 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
 import svgr from 'vite-plugin-svgr';
+import { transformDynamicImports } from './plugins/transformDynamicImports';
 
 export default defineConfig({
   plugins: [
     svgr(),
     react(),
+    transformDynamicImports(),
   ],
   resolve: {
     alias: {
