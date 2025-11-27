@@ -108,7 +108,14 @@ transformDynamicImports({
 
 ## How It Works
 
-### Dynamic Import Transformation
+The plugin performs two types of transformations:
+
+1. **Dynamic Import Transformation** - Applied to entry chunks (e.g., `main.js`)
+2. **Static Import Transformation** - Applied to chunk files (e.g., `*.chunk.js`)
+
+### Dynamic Import Transformation (Entry Chunks)
+
+Transforms dynamic imports in entry files to use runtime-configurable base paths.
 
 **Before:**
 ```javascript
@@ -120,17 +127,21 @@ import('./components/LazyComponent.abc123.chunk.js')
 import(((typeof window !== 'undefined' && window) ? window["resourceBasePath_{{widget.wid}}"] : '') + "LazyComponent.abc123.chunk.js")
 ```
 
-### Static Import Transformation
+### Static Import Transformation (Chunk Files)
 
-**Before:**
+Transforms static imports from the entry file in chunk files to use widget manager URLs.
+
+**Before (in chunk file):**
 ```javascript
 import { something } from './main.js'
 ```
 
-**After:**
+**After (in chunk file):**
 ```javascript
 import { something } from '{{site.url}}/widget_manager/{{widget.wid}}/{{widget.version}}.js'
 ```
+
+This ensures that when chunk files import from the entry file, they reference the correct versioned URL in the widget manager.
 
 ## SSR Safety
 

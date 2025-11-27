@@ -107,65 +107,67 @@ export function transformDynamicImports(
         }
 
         const chunk = chunkOrAsset as OutputChunk;
-        
-        // Skip non-entry chunks unless custom predicate says otherwise
-        if (!entryNamePredicate(chunk)) {
-          continue;
-        }
-
         let transformCount = 0;
         const s = new MagicString(chunk.code);
         
-        // Pattern 1: Transform dynamic imports like import("./file.chunk.js")
-        // This regex handles:
-        // - Single quotes, double quotes, or backticks
-        // - Optional whitespace around the path
-        // - Captures the quote type to ensure matching pairs
-        // Escape special regex characters in chunkFilePattern
-        const escapedChunkPattern = chunkFilePattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const dynamicImportRegex = new RegExp(
-          `import\\(\\s*([\\x60'"])(\\.\\/[^\\x60'"()]+?${escapedChunkPattern})\\1\\s*\\)`,
-          'g'
-        );
-        
-        let match: RegExpExecArray | null;
-        while ((match = dynamicImportRegex.exec(chunk.code)) !== null) {
-          const fullMatch = match[0];
-          const quote = match[1];
-          const chunkPath = match[2];
-          const chunkName = chunkPath.replace('./', '');
+        // Pattern 1: Transform dynamic imports in entry chunks
+        // Only process entry chunks for dynamic import transformation
+        if (entryNamePredicate(chunk)) {
+          // Transform dynamic imports like import("./file.chunk.js")
+          // This regex handles:
+          // - Single quotes, double quotes, or backticks
+          // - Optional whitespace around the path
+          // - Captures the quote type to ensure matching pairs
+          // Escape special regex characters in chunkFilePattern
+          const escapedChunkPattern = chunkFilePattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const dynamicImportRegex = new RegExp(
+            `import\\(\\s*([\\x60'"])(\\.\\/[^\\x60'"()]+?${escapedChunkPattern})\\1\\s*\\)`,
+            'g'
+          );
           
-          // Generate SSR-safe replacement
-          // Uses typeof guard to prevent window access in SSR contexts
-          // TODO: Add sanitization/validation for resourceBasePath at runtime to prevent 
-          // path traversal attacks if the global variable can be user-influenced.
-          // Consider implementing: path normalization, allowlist checking, or CSP headers.
-          const resourceBaseRef = resourceBaseVar(widgetPlaceholder);
-          const replacement = `import(((typeof window !== 'undefined' && window) ? ${resourceBaseRef} : '') + ${quote}${chunkName}${quote})`;
-          
-          s.overwrite(match.index, match.index + fullMatch.length, replacement);
-          transformCount++;
+          let match: RegExpExecArray | null;
+          while ((match = dynamicImportRegex.exec(chunk.code)) !== null) {
+            const fullMatch = match[0];
+            const quote = match[1];
+            const chunkPath = match[2];
+            const chunkName = chunkPath.replace('./', '');
+            
+            // Generate SSR-safe replacement
+            // Uses typeof guard to prevent window access in SSR contexts
+            // TODO: Add sanitization/validation for resourceBasePath at runtime to prevent 
+            // path traversal attacks if the global variable can be user-influenced.
+            // Consider implementing: path normalization, allowlist checking, or CSP headers.
+            const resourceBaseRef = resourceBaseVar(widgetPlaceholder);
+            const replacement = `import(((typeof window !== 'undefined' && window) ? ${resourceBaseRef} : '') + ${quote}${chunkName}${quote})`;
+            
+            s.overwrite(match.index, match.index + fullMatch.length, replacement);
+            transformCount++;
+          }
         }
 
-        // Pattern 2: Transform static imports from entry file
-        // Matches: from "./main.js", from './main.js', from `./main.js`
-        // Handles optional whitespace between 'from' and the quote
-        // Escape special regex characters in entryFileName
-        const escapedEntryFile = entryFileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const staticImportRegex = new RegExp(
-          `from\\s*([\\x60'"])\\.\\/${escapedEntryFile}\\1`,
-          'g'
-        );
-        
-        while ((match = staticImportRegex.exec(chunk.code)) !== null) {
-          const fullMatch = match[0];
-          const quote = match[1];
+        // Pattern 2: Transform static imports from entry file in chunk files
+        // Process all chunk files (not just entry) to transform imports from main.js
+        if (fileName.includes(chunkFilePattern)) {
+          // Matches: from "./main.js", from './main.js', from `./main.js`
+          // Handles optional whitespace between 'from' and the quote
+          // Escape special regex characters in entryFileName
+          const escapedEntryFile = entryFileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const staticImportRegex = new RegExp(
+            `from\\s*([\\x60'"])\\.\\/${escapedEntryFile}\\1`,
+            'g'
+          );
           
-          // Replace with templated URL for widget versioning
-          const replacement = `from ${quote}${staticImportUrlTemplate}${quote}`;
-          
-          s.overwrite(match.index, match.index + fullMatch.length, replacement);
-          transformCount++;
+          let match: RegExpExecArray | null;
+          while ((match = staticImportRegex.exec(chunk.code)) !== null) {
+            const fullMatch = match[0];
+            const quote = match[1];
+            
+            // Replace with templated URL for widget versioning
+            const replacement = `from ${quote}${staticImportUrlTemplate}${quote}`;
+            
+            s.overwrite(match.index, match.index + fullMatch.length, replacement);
+            transformCount++;
+          }
         }
 
         // If we made any transformations, update the chunk
@@ -185,7 +187,7 @@ export function transformDynamicImports(
           }
           
           this.warn(
-            `Transformed ${transformCount} dynamic import(s) in ${fileName}`
+            `Transformed ${transformCount} import(s) in ${fileName}`
           );
         }
       }
