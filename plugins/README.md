@@ -73,7 +73,7 @@ transformDynamicImports({
 
 ### `resourceBaseVar`
 - **Type**: `(widPlaceholder: string) => string`
-- **Default**: `(widPlaceholder) => window["resourceBasePath_${widPlaceholder}"]`
+- **Default**: `(widPlaceholder) => window['resourceBasePath-${widPlaceholder}']`
 - **Description**: Function that generates the runtime variable reference for the resource base path
 
 ### `entryNamePredicate`
@@ -124,7 +124,7 @@ import('./components/LazyComponent.abc123.chunk.js')
 
 **After:**
 ```javascript
-import(((typeof window !== 'undefined' && window) ? window["resourceBasePath_{{widget.wid}}"] : '') + "LazyComponent.abc123.chunk.js")
+import(((typeof window !== 'undefined' && window) ? window['resourceBasePath-{{widget.wid}}'] : '') + "LazyComponent.abc123.chunk.js")
 ```
 
 ### Static Import Transformation (Chunk Files)
@@ -148,7 +148,7 @@ This ensures that when chunk files import from the entry file, they reference th
 The plugin includes SSR safety guards to prevent crashes in server-side rendering contexts:
 
 ```javascript
-(typeof window !== 'undefined' && window) ? window["resourceBasePath_{{widget.wid}}"] : ''
+(typeof window !== 'undefined' && window) ? window['resourceBasePath-{{widget.wid}}'] : ''
 ```
 
 This ensures that:

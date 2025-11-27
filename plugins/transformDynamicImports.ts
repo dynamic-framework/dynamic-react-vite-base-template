@@ -55,7 +55,7 @@ export interface TransformDynamicImportsOptions {
  * Creates a window-based accessor with SSR safety
  */
 const defaultResourceBaseVar = (widPlaceholder: string): string => {
-  return `window["resourceBasePath_${widPlaceholder}"]`;
+  return `window['resourceBasePath-${widPlaceholder}']`;
 };
 
 /**
