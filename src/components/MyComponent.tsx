@@ -33,7 +33,7 @@ export default function MyComponent() {
         <div className="col mb-6">
           <MyLink
             href="https://dynamicframework.dev/docs"
-            icon="book"
+            icon="Book"
             title="Learn"
             description="Get started with Dynamic Framework!"
           />
@@ -41,7 +41,7 @@ export default function MyComponent() {
         <div className="col mb-6">
           <MyLink
             href="https://dynamicframework.dev/theming"
-            icon="brush"
+            icon="Brush"
             title="Themes"
             description="Learn how to create a unique look-and-feel!"
           />
@@ -49,7 +49,7 @@ export default function MyComponent() {
         <div className="col mb-6">
           <MyLink
             href="https://dynamicframework.dev/components"
-            icon="layout-text-window"
+            icon="Layout"
             title="Experiences"
             description="Explore the fully React-based templates"
           />

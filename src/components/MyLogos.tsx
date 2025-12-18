@@ -8,7 +8,7 @@ export default function MyLogos() {
     <div className="d-flex gap-4 flex-column flex-md-row justify-content-center align-items-center mt-4">
       <ModyoLogo />
       <DIcon
-        icon="plus"
+        icon="Plus"
         size="2rem"
         className="text-muted"
       />
