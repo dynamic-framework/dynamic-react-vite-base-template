@@ -26,7 +26,8 @@ export default function MyLink(
         hasCircle
         icon={icon}
         size="30px"
-        theme="secondary"
+        color="secondary"
+        className="m-auto"
       />
       <div className="ms-4">
         <p className="fs-5 fw-bold text-dark mb-1">{title}</p>
