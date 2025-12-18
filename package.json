@@ -1,7 +1,7 @@
 {
   "name": "@dynamic-framework/dynamic-vite-base-template",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "start": "vite",
@@ -19,14 +19,16 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@dynamic-framework/ui-react": "^1.36.2",
-    "axios": "^1.12.2",
+    "@dynamic-framework/ui-react": "^2.0.0",
+    "axios": "^1.13.2",
     "classnames": "^2.5.1",
-    "i18next": "^23.6.0",
-    "liquidjs": "^10.9.3",
-    "react": "~18.3.1",
-    "react-dom": "~18.2.0",
-    "react-i18next": "~13.3.1"
+    "i18next": "^25.0.0",
+    "liquidjs": "^10.24.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-i18next": "^16.0.0",
+    "framer-motion": "^12.23.26",
+    "react-hot-toast": "^2.6.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.1.0",
