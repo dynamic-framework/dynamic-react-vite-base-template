@@ -31,6 +31,7 @@
     "react-hot-toast": "^2.6.0"
   },
   "devDependencies": {
+    "@dynamic-framework/vite-plugin-transform-dynamic-imports": "git+ssh://git@github.com/dynamic-framework/vite-plugin-transform-dynamic-imports.git",
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
     "@eslint/js": "^9.36.0",
