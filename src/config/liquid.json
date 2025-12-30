@@ -5,6 +5,8 @@
     "url": "https://un.modyo.cloud/testing"
   },
   "vars": {
+    "api-base-url": "/api",
+    "use-mocks": "true",
     "currency-symbol": "$",
     "currency-precision": 2,
     "currency-separator": ".",

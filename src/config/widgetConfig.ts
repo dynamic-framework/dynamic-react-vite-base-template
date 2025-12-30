@@ -19,3 +19,14 @@ export const CONTEXT_CONFIG = {
   language: SITE_LANG,
   currency: VARS_CURRENCY,
 } satisfies Partial<ComponentProps<typeof DContextProvider>>;
+
+// API Configuration
+export const API_BASE_URL = liquidParser.parse('{{vars.api-base-url}}');
+export const USE_MOCKS = liquidParser.parse('{{vars.use-mocks}}') === 'true';
+
+export const widgetConfig = {
+  apiBaseUrl: API_BASE_URL,
+  useMocks: USE_MOCKS,
+  siteLang: SITE_LANG,
+  siteName: SITE_NAME,
+};
