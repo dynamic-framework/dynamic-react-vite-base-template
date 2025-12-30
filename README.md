@@ -1,73 +1,129 @@
-# React + TypeScript + Vite
+# Dynamic React Vite Base Template
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Template base para crear widgets con Dynamic Framework usando Vite.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+| Tecnología | Versión | Propósito |
+|------------|---------|-----------|
+| React | 19.x | UI Library |
+| TypeScript | 5.9.x | Type safety |
+| Vite | 7.x | Build tool |
+| Dynamic UI | 2.0.x | Component library |
+| i18next | 25.x | Internacionalización |
 
-## React Compiler
+## Requisitos
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Node.js >= 22.0.0
+- npm >= 10.x
 
-## Expanding the ESLint configuration
+## Inicio Rápido
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+```bash
+# Clonar template
+git clone https://github.com/dynamic-framework/dynamic-react-vite-base-template.git my-widget
+cd my-widget
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# Instalar dependencias
+npm install
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Iniciar desarrollo
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Scripts Disponibles
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Script | Descripción |
+|--------|-------------|
+| `npm run dev` | Inicia servidor de desarrollo |
+| `npm run build` | Compila para producción |
+| `npm run preview` | Preview del build de producción |
+| `npm run lint` | Ejecuta ESLint |
+| `npm run stylelint` | Ejecuta Stylelint para CSS/SCSS |
+| `npm run test` | Ejecuta tests con Vitest |
+| `npm run push` | Build + push a Modyo |
+| `npm run push:publish` | Build + push + publish a Modyo |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Estructura del Proyecto
+
 ```
+├── public/              # Assets estáticos
+├── src/
+│   ├── components/      # Componentes React
+│   ├── styles/          # Estilos SCSS
+│   ├── App.tsx          # Componente principal
+│   └── main.tsx         # Entry point
+├── tests/               # Tests
+├── index.html           # HTML template
+├── vite.config.ts       # Configuración Vite
+├── tsconfig.json        # Configuración TypeScript
+└── package.json
+```
+
+## Configuración de Modyo
+
+Para hacer push a Modyo, configura las variables de entorno:
+
+```bash
+# .env (no commitear)
+MODYO_ACCOUNT_URL=https://tu-cuenta.modyo.cloud
+MODYO_TOKEN=tu-token
+MODYO_SITE=nombre-del-sitio
+MODYO_WIDGET_NAME=nombre-del-widget
+```
+
+Consulta la [documentación de Modyo CLI](https://docs.modyo.com/en/platform/cli) para más detalles.
+
+## Code Splitting
+
+Para widgets grandes que requieren code splitting, usa la rama `feat/with-chunks`:
+
+```bash
+git checkout feat/with-chunks
+```
+
+Esta rama incluye configuración adicional para dividir el bundle en chunks que se cargan dinámicamente. Ver [README de feat/with-chunks](https://github.com/dynamic-framework/dynamic-react-vite-base-template/tree/feat/with-chunks) para más información.
+
+## Linting y Formato
+
+El template incluye:
+
+- **ESLint** - Linting de TypeScript/React (flat config)
+- **Stylelint** - Linting de CSS/SCSS (Bootstrap config)
+- **Husky** - Git hooks para pre-commit
+- **lint-staged** - Lint solo archivos staged
+- **Commitlint** - Validación de mensajes de commit (conventional commits)
+
+## Testing
+
+```bash
+# Ejecutar tests
+npm run test
+
+# Ejecutar tests en modo watch
+npm run test -- --watch
+
+# Ejecutar con coverage
+npm run test -- --coverage
+```
+
+## Build de Producción
+
+```bash
+npm run build
+```
+
+Output en `build/`:
+- `main.js` - Bundle JavaScript
+- `main.css` - Estilos compilados
+
+## Recursos
+
+- [Dynamic UI Storybook](https://react.dynamicframework.dev/)
+- [Dynamic Framework Docs](https://dynamic.modyo.com/)
+- [Vite Documentation](https://vite.dev/)
+- [Modyo CLI Documentation](https://docs.modyo.com/en/platform/cli)
+
+## Licencia
+
+MIT
