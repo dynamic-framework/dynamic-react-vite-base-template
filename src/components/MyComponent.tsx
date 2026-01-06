@@ -17,7 +17,7 @@ export default function MyComponent() {
         'align-items-center justify-content-center',
       )}
     >
-      <h1 className="fw-bolder text-center">{t('title')}</h1>
+      <h1 className="fw-semibold text-center">{t('title')}</h1>
       <p className="h5 text-muted text-center py-4">
         Get started by editing
         <br />
