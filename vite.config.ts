@@ -35,14 +35,14 @@ export default defineConfig({
         entryFileNames: 'main.js',
         chunkFileNames: '[name].[hash].chunk.js',
         assetFileNames: (assetInfo) => {
-          if (assetInfo.names.includes('.css')) {
-            return 'main.css'
+          if (assetInfo.name?.endsWith('.css')) {
+            return 'main.css';
           }
-          return '[name].[ext]'
+          return '[name].[ext]';
         },
-        format: 'es'
-      }
-    }
+        format: 'es',
+      },
+    },
   },
   test: {
     globals: true,
