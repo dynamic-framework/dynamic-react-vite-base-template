@@ -152,6 +152,33 @@ Para que los chunks funcionen en Modyo, el widget debe definir la variable globa
 | `npm run build` | Compila para producción (genera chunks) |
 | `npm run preview` | Preview del build |
 | `npm run push` | Build + push a Modyo |
+| `npm run push:publish` | Build + push + publicar a Modyo |
+
+## Configuración de Modyo
+
+Para hacer push a Modyo con code splitting:
+
+1. Copia el archivo de ejemplo:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Configura las variables en `.env`:
+   ```bash
+   MODYO_ACCOUNT_URL=https://tu-cuenta.modyo.cloud
+   MODYO_TOKEN=tu-token
+   MODYO_SITE_HOST=tu-sitio
+   MODYO_ZIP=true  # ⚠️ REQUERIDO para code splitting
+   ```
+
+3. Ejecuta el push:
+   ```bash
+   npm run push
+   ```
+
+> **Importante:** `MODYO_ZIP=true` es obligatorio para que los chunks se suban correctamente.
+
+Ver `.env.example` para todas las opciones y la [documentación de Modyo CLI](https://docs.modyo.com/en/platform/tools/cli.html) para más detalles.
 
 ## Recursos
 
