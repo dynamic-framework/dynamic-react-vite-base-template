@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LoadingState } from './LoadingState';
 import { ErrorState } from './ErrorState';
 import { EmptyState } from './EmptyState';
@@ -25,15 +26,17 @@ export function DataStateWrapper<T>({
   isError,
   data,
   onRetry,
-  emptyMessage = 'No hay datos disponibles',
+  emptyMessage,
   emptyIcon,
   emptyActionText,
   onEmptyAction,
-  errorMessage = 'Error al cargar los datos',
+  errorMessage,
   loadingVariant = 'list',
   loadingItems = 3,
   children
 }: DataStateWrapperProps<T>) {
+  const { t } = useTranslation();
+
   // 1. Loading
   if (isLoading) {
     return <LoadingState variant={loadingVariant} items={loadingItems} />;
@@ -41,14 +44,19 @@ export function DataStateWrapper<T>({
 
   // 2. Error
   if (isError) {
-    return <ErrorState message={errorMessage} onRetry={onRetry} />;
+    return (
+      <ErrorState
+        message={errorMessage ?? t('states.error.default')}
+        onRetry={onRetry}
+      />
+    );
   }
 
   // 3. Empty
   if (!data?.length) {
     return (
       <EmptyState
-        message={emptyMessage}
+        message={emptyMessage ?? t('states.empty.default')}
         icon={emptyIcon}
         actionText={emptyActionText}
         onAction={onEmptyAction}

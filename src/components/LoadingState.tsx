@@ -1,4 +1,5 @@
 import { DCard, DSkeleton } from '@dynamic-framework/ui-react';
+import { useTranslation } from 'react-i18next';
 
 type LoadingVariant = 'spinner' | 'list' | 'card' | 'table';
 
@@ -13,6 +14,8 @@ export function LoadingState({
   items = 3,
   rows = 5
 }: LoadingStateProps) {
+  const { t } = useTranslation();
+
   switch (variant) {
     case 'list':
       return (
@@ -55,7 +58,7 @@ export function LoadingState({
       return (
         <div className="d-flex justify-content-center align-items-center p-5">
           <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Cargando...</span>
+            <span className="visually-hidden">{t('states.loading')}</span>
           </div>
         </div>
       );

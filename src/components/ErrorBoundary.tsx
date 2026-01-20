@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
+import { Translation } from 'react-i18next';
 import { DAlert, DButton, DIcon } from '@dynamic-framework/ui-react';
 
 interface ErrorBoundaryProps {
@@ -50,48 +51,52 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         return this.props.fallback;
       }
 
-      // Default fallback UI
+      // Default fallback UI with i18n
       return (
-        <div className="p-4">
-          <DAlert color="danger">
-            <div className="d-flex align-items-start gap-3">
-              <DIcon icon="AlertTriangle" size="1.5rem" />
-              <div className="flex-grow-1">
-                <h5 className="mb-2">Ocurrió un error inesperado</h5>
-                <p className="mb-3 text-secondary">
-                  Lo sentimos, algo salió mal. Puedes intentar las siguientes opciones:
-                </p>
-                <div className="d-flex gap-2 flex-wrap">
-                  <DButton
-                    onClick={this.handleReset}
-                    text="Reintentar"
-                    variant="outline"
-                    iconStart="RefreshCw"
-                  />
-                  <DButton
-                    onClick={this.handleReload}
-                    text="Recargar página"
-                    variant="link"
-                    iconStart="RotateCcw"
-                  />
+        <Translation>
+          {(t) => (
+            <div className="p-4">
+              <DAlert color="danger">
+                <div className="d-flex align-items-start gap-3">
+                  <DIcon icon="AlertTriangle" size="1.5rem" />
+                  <div className="flex-grow-1">
+                    <h5 className="mb-2">{t('states.boundary.title')}</h5>
+                    <p className="mb-3 text-secondary">
+                      {t('states.boundary.description')}
+                    </p>
+                    <div className="d-flex gap-2 flex-wrap">
+                      <DButton
+                        onClick={this.handleReset}
+                        text={t('states.boundary.retry')}
+                        variant="outline"
+                        iconStart="RefreshCw"
+                      />
+                      <DButton
+                        onClick={this.handleReload}
+                        text={t('states.boundary.reload')}
+                        variant="link"
+                        iconStart="RotateCcw"
+                      />
+                    </div>
+                    {process.env.NODE_ENV === 'development' && this.state.error && (
+                      <details className="mt-3">
+                        <summary className="text-secondary cursor-pointer">
+                          {t('states.boundary.details')}
+                        </summary>
+                        <pre className="mt-2 p-2 bg-light rounded small overflow-auto">
+                          <code>
+                            {this.state.error.toString()}
+                            {this.state.errorInfo?.componentStack}
+                          </code>
+                        </pre>
+                      </details>
+                    )}
+                  </div>
                 </div>
-                {process.env.NODE_ENV === 'development' && this.state.error && (
-                  <details className="mt-3">
-                    <summary className="text-secondary cursor-pointer">
-                      Detalles técnicos (solo desarrollo)
-                    </summary>
-                    <pre className="mt-2 p-2 bg-light rounded small overflow-auto">
-                      <code>
-                        {this.state.error.toString()}
-                        {this.state.errorInfo?.componentStack}
-                      </code>
-                    </pre>
-                  </details>
-                )}
-              </div>
+              </DAlert>
             </div>
-          </DAlert>
-        </div>
+          )}
+        </Translation>
       );
     }
 

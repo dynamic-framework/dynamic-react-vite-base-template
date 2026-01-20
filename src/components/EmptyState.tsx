@@ -1,7 +1,8 @@
 import { DButton, DIcon } from '@dynamic-framework/ui-react';
+import { useTranslation } from 'react-i18next';
 
 interface EmptyStateProps {
-  message: string;
+  message?: string;
   icon?: string;
   actionText?: string;
   onAction?: () => void;
@@ -13,6 +14,8 @@ export function EmptyState({
   actionText,
   onAction
 }: EmptyStateProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="d-flex flex-column align-items-center justify-content-center p-5 text-center">
       <DIcon
@@ -20,7 +23,7 @@ export function EmptyState({
         size="3rem"
         className="text-secondary mb-3"
       />
-      <p className="text-secondary mb-3">{message}</p>
+      <p className="text-secondary mb-3">{message ?? t('states.empty.default')}</p>
       {actionText && onAction && (
         <DButton
           onClick={onAction}

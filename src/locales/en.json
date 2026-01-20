@@ -1,3 +1,20 @@
 {
-  "title": "Welcome to Dynamic Framework + React"
+  "title": "Welcome to Dynamic Framework + React",
+  "states": {
+    "loading": "Loading...",
+    "empty": {
+      "default": "No data available"
+    },
+    "error": {
+      "default": "Error loading data",
+      "retry": "Retry"
+    },
+    "boundary": {
+      "title": "An unexpected error occurred",
+      "description": "We're sorry, something went wrong. You can try the following options:",
+      "retry": "Retry",
+      "reload": "Reload page",
+      "details": "Technical details (development only)"
+    }
+  }
 }
