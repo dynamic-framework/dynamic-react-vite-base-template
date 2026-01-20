@@ -28,13 +28,16 @@ jobs:
         run: npm ci
 
       - name: stylelint check
-        run: npm run stylelint --if-present
+        run: npm run stylelint
 
       - name: lint check
-        run: npm run lint --if-present
+        run: npm run lint
 
       - name: Validate PR commits
         run: npx commitlint --from ${{ github.event.pull_request.head.sha }}~${{ github.event.pull_request.commits }} --to ${{ github.event.pull_request.head.sha }} --verbose
 
       - name: Test package
-        run: npm run test --if-present
+        run: npm run test
+
+      - name: Build package
+        run: npm run build
