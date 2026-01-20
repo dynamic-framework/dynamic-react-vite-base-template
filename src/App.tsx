@@ -8,6 +8,7 @@ import {
   useEffect,
 } from 'react';
 
+import { ErrorBoundary } from './components';
 import MyComponent from './components/MyComponent';
 import { CONTEXT_CONFIG } from './config/widgetConfig';
 
@@ -21,15 +22,17 @@ export default function App() {
   }, [setContext]);
 
   return (
-    <DCard className="container my-md-14">
-      <DCard.Body className="d-flex flex-column gap-4 p-4 p-md-14">
-        <MyComponent />
-        <div className="d-flex flex-column gap-4">
-          <Suspense fallback={<div>Loading...</div>}>
-            <ImportedComponent />
-          </Suspense>
-        </div>
-      </DCard.Body>
-    </DCard>
+    <ErrorBoundary>
+      <DCard className="container my-md-14">
+        <DCard.Body className="d-flex flex-column gap-4 p-4 p-md-14">
+          <MyComponent />
+          <div className="d-flex flex-column gap-4">
+            <Suspense fallback={<div>Loading...</div>}>
+              <ImportedComponent />
+            </Suspense>
+          </div>
+        </DCard.Body>
+      </DCard>
+    </ErrorBoundary>
   );
 }
