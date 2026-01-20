@@ -23,6 +23,6 @@ describe('<MyLogos />', () => {
     render(<MyLogos />);
     expect(screen.getByTestId('modyo-logo')).toBeInTheDocument();
     expect(screen.getByTestId('react-logo')).toBeInTheDocument();
-    expect(screen.getByTestId('d-icon')).toHaveTextContent('plus');
+    expect(screen.getByTestId('d-icon')).toHaveTextContent('Plus');
   });
 });
