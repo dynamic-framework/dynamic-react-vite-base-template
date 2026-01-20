@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 
-// Mock de window.matchMedia (requerido por algunos componentes Dynamic UI)
+// Mock for window.matchMedia (required by some Dynamic UI components)
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: (query: string) => ({
@@ -15,14 +15,14 @@ Object.defineProperty(window, 'matchMedia', {
   }),
 });
 
-// Mock de ResizeObserver
+// Mock for ResizeObserver
 global.ResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}
   disconnect() {}
 };
 
-// Silenciar warnings de React en tests (opcional)
+// Silence React warnings in tests (optional)
 const originalError = console.error;
 beforeAll(() => {
   console.error = (...args: unknown[]) => {
