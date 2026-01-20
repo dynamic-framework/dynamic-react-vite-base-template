@@ -1,4 +1,4 @@
-import { DCard, DSkeleton } from '@dynamic-framework/ui-react';
+import { DCard } from '@dynamic-framework/ui-react';
 import { useTranslation } from 'react-i18next';
 
 type LoadingVariant = 'spinner' | 'list' | 'card' | 'table';
@@ -22,10 +22,12 @@ export function LoadingState({
         <div className="d-flex flex-column gap-3">
           {Array.from({ length: items }).map((_, i) => (
             <div key={i} className="d-flex align-items-center gap-3">
-              <DSkeleton variant="circular" width={40} height={40} />
-              <div className="flex-grow-1">
-                <DSkeleton variant="text" width="60%" />
-                <DSkeleton variant="text" width="40%" />
+              <div className="placeholder-glow">
+                <span className="placeholder rounded-circle" style={{ width: 40, height: 40, display: 'block' }} />
+              </div>
+              <div className="flex-grow-1 placeholder-glow">
+                <span className="placeholder col-6 mb-2" />
+                <span className="placeholder col-4" />
               </div>
             </div>
           ))}
@@ -36,19 +38,21 @@ export function LoadingState({
       return (
         <DCard>
           <DCard.Body>
-            <DSkeleton variant="text" width="40%" height={24} />
-            <DSkeleton variant="text" width="100%" />
-            <DSkeleton variant="text" width="80%" />
+            <div className="placeholder-glow">
+              <span className="placeholder col-4 mb-3" style={{ height: 24 }} />
+              <span className="placeholder col-12 mb-2" />
+              <span className="placeholder col-8" />
+            </div>
           </DCard.Body>
         </DCard>
       );
 
     case 'table':
       return (
-        <div className="d-flex flex-column gap-2">
-          <DSkeleton variant="rectangular" height={40} />
+        <div className="d-flex flex-column gap-2 placeholder-glow">
+          <span className="placeholder col-12" style={{ height: 40 }} />
           {Array.from({ length: rows }).map((_, i) => (
-            <DSkeleton key={i} variant="rectangular" height={48} />
+            <span key={i} className="placeholder col-12" style={{ height: 48 }} />
           ))}
         </div>
       );
