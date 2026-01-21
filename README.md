@@ -62,17 +62,25 @@ npm run dev
 
 ## Configuración de Modyo
 
-Para hacer push a Modyo, configura las variables de entorno:
+Para hacer push a Modyo:
 
-```bash
-# .env (no commitear)
-MODYO_ACCOUNT_URL=https://tu-cuenta.modyo.cloud
-MODYO_TOKEN=tu-token
-MODYO_SITE=nombre-del-sitio
-MODYO_WIDGET_NAME=nombre-del-widget
-```
+1. Copia el archivo de ejemplo:
+   ```bash
+   cp .env.example .env
+   ```
 
-Consulta la [documentación de Modyo CLI](https://docs.modyo.com/en/platform/cli) para más detalles.
+2. Configura las variables requeridas en `.env`:
+   - `MODYO_ACCOUNT_URL` - URL de tu cuenta Modyo
+   - `MODYO_TOKEN` - Token de acceso (generar en Admin > Settings > API Access)
+   - `MODYO_SITE_HOST` - Host del sitio destino
+
+3. Ejecuta el push:
+   ```bash
+   npm run push           # Solo push
+   npm run push:publish   # Push + publicar
+   ```
+
+Ver `.env.example` para todas las opciones disponibles y la [documentación de Modyo CLI](https://docs.modyo.com/en/platform/tools/cli.html) para más detalles.
 
 ## Code Splitting
 
