@@ -32,7 +32,7 @@ export default function MyComponent() {
       <div className="w-100 row mt-14">
         <div className="col mb-6">
           <MyLink
-            href="https://dynamicframework.dev/docs"
+            href="https://docs.modyo.com/en/dynamic"
             icon="Book"
             title="Learn"
             description="Get started with Dynamic Framework!"
@@ -40,7 +40,7 @@ export default function MyComponent() {
         </div>
         <div className="col mb-6">
           <MyLink
-            href="https://dynamicframework.dev/theming"
+            href="https://docs.modyo.com/en/dynamic/customization/theming.html"
             icon="Brush"
             title="Themes"
             description="Learn how to create a unique look-and-feel!"
@@ -48,10 +48,10 @@ export default function MyComponent() {
         </div>
         <div className="col mb-6">
           <MyLink
-            href="https://dynamicframework.dev/components"
+            href="https://docs.modyo.com/en/dynamic/development/components.html"
             icon="Layout"
-            title="Experiences"
-            description="Explore the fully React-based templates"
+            title="Components"
+            description="Explore the fully React-based components"
           />
         </div>
       </div>
