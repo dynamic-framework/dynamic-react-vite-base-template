@@ -9,6 +9,15 @@ export default defineConfig({
     svgr(),
     react(),
   ],
+  server: {
+    cors: true,
+    origin: 'http://localhost:5173',
+    allowedHosts: [
+      'localhost', 
+      '127.0.0.1', 
+      '*.modyo.cloud',
+    ],
+  },
   resolve: {
     alias: {
       '@dynamic-framework/ui-react':
