@@ -18,4 +18,4 @@ window.__vite_plugin_react_preamble_installed__ = true;
 await import('/@vite/client');
 
 // 3. App entry point
-await import('./main');
+await import('./main.tsx');
