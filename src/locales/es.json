@@ -1,20 +1,40 @@
 {
-  "title": "Bienvenido a Dynamic Framework + React",
+  "title": "Bienvenido al template de widget Modyo",
   "states": {
     "loading": "Cargando...",
     "empty": {
-      "default": "No hay datos disponibles"
+      "default": "No hay elementos para mostrar"
     },
     "error": {
-      "default": "Error al cargar los datos",
+      "default": "Algo salió mal",
       "retry": "Reintentar"
     },
     "boundary": {
-      "title": "Ocurrió un error inesperado",
-      "description": "Lo sentimos, algo salió mal. Puedes intentar las siguientes opciones:",
+      "title": "Error de la aplicación",
+      "description": "Ocurrió un error inesperado. Por favor intenta de nuevo.",
       "retry": "Reintentar",
       "reload": "Recargar página",
-      "details": "Detalles técnicos (solo desarrollo)"
+      "details": "Ver detalles"
+    }
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "search": "Buscar",
+    "noResults": "Sin resultados",
+    "placeholder": "Escribe para filtrar..."
+  },
+  "examples": {
+    "entityList": {
+      "title": "Entidades",
+      "addNew": "Agregar nuevo",
+      "modalTitle": "Nueva entidad",
+      "fieldName": "Nombre",
+      "empty": "No hay entidades aún. Haz click en 'Agregar nuevo' para crear la primera.",
+      "error": "No se pudieron cargar las entidades"
     }
   }
 }

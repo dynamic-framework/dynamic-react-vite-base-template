@@ -1,20 +1,40 @@
 {
-  "title": "Welcome to Dynamic Framework + React",
+  "title": "Welcome to the Modyo Widget Template",
   "states": {
     "loading": "Loading...",
     "empty": {
-      "default": "No data available"
+      "default": "No items to display"
     },
     "error": {
-      "default": "Error loading data",
+      "default": "Something went wrong",
       "retry": "Retry"
     },
     "boundary": {
-      "title": "An unexpected error occurred",
-      "description": "We're sorry, something went wrong. You can try the following options:",
+      "title": "Application error",
+      "description": "An unexpected error occurred. Please try again.",
       "retry": "Retry",
       "reload": "Reload page",
-      "details": "Technical details (development only)"
+      "details": "Show details"
+    }
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "noResults": "No results found",
+    "placeholder": "Type to filter..."
+  },
+  "examples": {
+    "entityList": {
+      "title": "Entities",
+      "addNew": "Add new",
+      "modalTitle": "New entity",
+      "fieldName": "Name",
+      "empty": "No entities yet. Click 'Add new' to create your first one.",
+      "error": "Could not load entities"
     }
   }
 }
