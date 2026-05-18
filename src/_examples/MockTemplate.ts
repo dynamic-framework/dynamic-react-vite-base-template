@@ -1,10 +1,19 @@
 /**
- * Template para Mock Data.
+ * Mock Template — Reference Example
  *
- * Los mocks:
- * - Usan tipos de DOMINIO (post-mapper), no tipos de API
- * - Contienen datos realistas y variados
- * - Se activan via widgetConfig.useMocks o VITE_USE_MOCKS=true
+ * This file is a reference scaffold. To use:
+ *   1. Copy this file to `src/services/mocks/<entityName>.ts`
+ *   2. Rename `Entity` and `mockEntities` to your actual entity name
+ *      (convention: `mockEntities` → `mock<Entity>`)
+ *   3. Adjust the mock data to your domain
+ *
+ * Mocks:
+ * - Use DOMAIN types (post-mapper), not API types
+ * - Contain realistic, varied data
+ * - Are toggled via widgetConfig.useMocks or VITE_USE_MOCKS=true
+ *
+ * This file is excluded from TypeScript compilation
+ * (see tsconfig.app.json `exclude`).
  */
 
 import type { Entity } from '../../types';

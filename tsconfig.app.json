@@ -33,6 +33,7 @@
     "tests/setup.ts"
   ],
   "exclude": [
-    "src/modyo-preview-entry.ts"
+    "src/modyo-preview-entry.ts",
+    "src/_examples/**"
   ]
 }
