@@ -3,7 +3,9 @@
  *
  * Aporte propio sobre upstream:
  *   - Variantes skeleton list/card/table (upstream solo trae spinner).
- *   - i18n del ariaLabel vía react-i18next (upstream usa string hardcoded).
+ *   - Texto accesible de carga internacionalizado vía react-i18next,
+ *     renderizado como contenido visually-hidden (upstream usa string
+ *     hardcoded).
  *
  * Patrón copiado del upstream para no perder accesibilidad:
  *   - aria-busy="true" + aria-live="polite" en el contenedor externo de cada
