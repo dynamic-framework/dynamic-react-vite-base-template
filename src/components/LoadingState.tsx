@@ -27,7 +27,9 @@ type LoadingVariant = 'spinner' | 'list' | 'card' | 'table';
 
 interface LoadingStateProps {
   variant?: LoadingVariant;
+  /** Number of skeleton items rendered by the `list` variant. */
   items?: number;
+  /** Number of skeleton rows rendered by the `table` variant (ignored otherwise). */
   rows?: number;
 }
 

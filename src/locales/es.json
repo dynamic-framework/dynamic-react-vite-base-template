@@ -35,7 +35,7 @@
       "create": "Crear",
       "modalTitle": "Nueva entidad",
       "fieldName": "Nombre",
-      "empty": "No hay entidades aún. Haz click en 'Agregar nuevo' para crear la primera.",
+      "empty": "No hay entidades aún. Haz clic en 'Agregar nuevo' para crear la primera.",
       "error": "No se pudieron cargar las entidades"
     },
     "entityCreate": {
