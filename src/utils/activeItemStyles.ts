@@ -10,20 +10,19 @@
  * <small className={styles.subtextClass}>...</small>
  */
 
-type IconColor = 'primary' | 'secondary' | 'light' | 'success' | 'danger' | 'warning' | 'info';
-type BadgeTheme = 'primary' | 'secondary' | 'light' | 'success' | 'danger' | 'warning' | 'info';
+type BootstrapColor = 'primary' | 'secondary' | 'light' | 'success' | 'danger' | 'warning' | 'info';
 
 export interface ActiveItemStyles {
   /** For DIcon color prop when icon should be primary normally */
-  iconColor: IconColor;
+  iconColor: BootstrapColor;
   /** For DIcon color prop when icon should be secondary normally */
-  iconColorSecondary: IconColor;
+  iconColorSecondary: BootstrapColor;
   /** For secondary text (account numbers, dates, etc.) */
   subtextClass: string;
   /** For danger/negative text (negative balances, errors) */
   dangerTextClass: string;
   /** For DBadge theme prop */
-  badgeTheme: BadgeTheme;
+  badgeTheme: BootstrapColor;
   /** For success text */
   successTextClass: string;
 }
@@ -52,7 +51,7 @@ export function getActiveItemStyles(isActive: boolean): ActiveItemStyles {
  */
 export function getActiveItemBasicStyles(isActive: boolean) {
   return {
-    iconColor: (isActive ? 'light' : 'primary') as IconColor,
+    iconColor: (isActive ? 'light' : 'primary') as BootstrapColor,
     textClass: isActive ? 'opacity-75' : 'text-muted',
   };
 }

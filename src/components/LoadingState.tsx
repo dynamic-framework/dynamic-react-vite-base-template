@@ -48,6 +48,7 @@ export function LoadingState({
           aria-busy="true"
           aria-live="polite"
         >
+          <span className="visually-hidden">{t('states.loading')}</span>
           {Array.from({ length: items }).map((_, i) => (
             <div key={i} className="d-flex align-items-center gap-3">
               <div className="placeholder-glow">
@@ -65,6 +66,7 @@ export function LoadingState({
     case 'card':
       return (
         <div aria-busy="true" aria-live="polite">
+          <span className="visually-hidden">{t('states.loading')}</span>
           <DCard>
             <DCard.Body>
               <div className="placeholder-glow">
@@ -84,6 +86,7 @@ export function LoadingState({
           aria-busy="true"
           aria-live="polite"
         >
+          <span className="visually-hidden">{t('states.loading')}</span>
           <span className="placeholder col-12" style={{ height: 40 }} />
           {Array.from({ length: rows }).map((_, i) => (
             <span key={i} className="placeholder col-12" style={{ height: 48 }} />
