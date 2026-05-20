@@ -18,7 +18,6 @@
     "prepare": "husky",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
     "typecheck:examples": "tsc --noEmit -p tsconfig.examples.json"
   },
   "dependencies": {
