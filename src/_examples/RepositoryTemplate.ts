@@ -1,31 +1,45 @@
 /**
- * Template para Repository Pattern.
+ * Repository Template — Reference Example
  *
- * Los repositories son funciones puras que:
- * - Llaman a la API o retornan mocks segun configuracion
- * - Transforman datos de API a tipos de dominio
- * - Soportan AbortSignal para cancelacion
+ * This file is a reference scaffold. To use:
+ *   1. Copy this file to `src/services/repositories/<entityName>.ts`
+ *      (convention: PascalCase entity, e.g. `Account.ts`, `Policy.ts`)
+ *   2. Rename `Entity`/`mockEntities` references to your actual entity
+ *   3. Update the endpoint paths (`/entities`) to your API surface
+ *   4. Adjust the mapper to translate API shape → domain shape
  *
- * NUNCA tienen estado interno (eso es responsabilidad de TanStack Query).
+ * Repositories are pure functions that:
+ * - Call the API or return mocks depending on configuration
+ * - Transform API data to domain types
+ * - Support AbortSignal for cancellation
+ *
+ * They NEVER hold internal state (that's TanStack Query's job).
+ *
+ * The relative imports below already match the destination location
+ * (`src/services/repositories/`), not the current location of this file
+ * in `src/_examples/`. After copying, no path adjustments are needed.
+ *
+ * This file is excluded from TypeScript compilation
+ * (see tsconfig.app.json `exclude`).
  */
 
 import { api } from '../api/client';
 import { USE_MOCKS } from '../../config/widgetConfig';
-import { mockEntities } from '../mocks/_template';
+import { mockEntities } from '../mocks/<entityName>';
 import type { Entity, ApiEntity, CreateEntityData, UpdateEntityData } from '../../types';
 
 // ============================================
-// CONFIGURACION
+// CONFIGURATION
 // ============================================
 
 const MOCK_DELAY = 500; // ms
 
 // ============================================
-// FUNCIONES DE REPOSITORIO
+// REPOSITORY FUNCTIONS
 // ============================================
 
 /**
- * Obtiene lista de entidades.
+ * Fetch the entity list.
  */
 export async function getEntities(signal?: AbortSignal): Promise<Entity[]> {
   if (USE_MOCKS) {
@@ -38,12 +52,12 @@ export async function getEntities(signal?: AbortSignal): Promise<Entity[]> {
 }
 
 /**
- * Obtiene una entidad por ID.
+ * Fetch a single entity by ID.
  */
 export async function getEntityById(id: string, signal?: AbortSignal): Promise<Entity> {
   if (USE_MOCKS) {
     await delay(MOCK_DELAY);
-    const entity = mockEntities.find((e) => e.id === id);
+    const entity = mockEntities.find((e: Entity) => e.id === id);
     if (!entity) throw new Error(`Entity ${id} not found`);
     return entity;
   }
@@ -53,7 +67,7 @@ export async function getEntityById(id: string, signal?: AbortSignal): Promise<E
 }
 
 /**
- * Crea una entidad.
+ * Create an entity.
  */
 export async function createEntity(data: CreateEntityData): Promise<Entity> {
   if (USE_MOCKS) {
@@ -72,12 +86,12 @@ export async function createEntity(data: CreateEntityData): Promise<Entity> {
 }
 
 /**
- * Actualiza una entidad.
+ * Update an entity.
  */
 export async function updateEntity(id: string, data: UpdateEntityData): Promise<Entity> {
   if (USE_MOCKS) {
     await delay(MOCK_DELAY);
-    const index = mockEntities.findIndex((e) => e.id === id);
+    const index = mockEntities.findIndex((e: Entity) => e.id === id);
     if (index === -1) throw new Error(`Entity ${id} not found`);
     mockEntities[index] = { ...mockEntities[index], ...data };
     return mockEntities[index];
@@ -88,12 +102,12 @@ export async function updateEntity(id: string, data: UpdateEntityData): Promise<
 }
 
 /**
- * Elimina una entidad.
+ * Delete an entity.
  */
 export async function deleteEntity(id: string): Promise<void> {
   if (USE_MOCKS) {
     await delay(MOCK_DELAY);
-    const index = mockEntities.findIndex((e) => e.id === id);
+    const index = mockEntities.findIndex((e: Entity) => e.id === id);
     if (index !== -1) mockEntities.splice(index, 1);
     return;
   }

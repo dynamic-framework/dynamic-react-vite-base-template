@@ -1,13 +1,27 @@
 /**
- * Template para TanStack Query Hooks.
+ * Query Hook Template — Reference Example
  *
- * Estos hooks:
- * - Encapsulan llamadas a repositorios
- * - Gestionan cache, loading, error states automaticamente
- * - Soportan cancelacion via AbortSignal
- * - Invalidan cache apropiadamente en mutations
+ * This file is a reference scaffold. To use:
+ *   1. Copy this file to `src/hooks/use<EntityName>.ts`
+ *      (convention: camelCase `use` + PascalCase entity,
+ *       e.g. `useAccount.ts`, `usePolicy.ts`)
+ *   2. Rename `entityKeys`/`useEntities`/etc. to your actual entity
+ *   3. Point the repository import at `<entityName>` (not `_template`)
  *
- * Patron: un archivo por entidad (useEntities.ts, usePolicies.ts, etc.)
+ * These hooks:
+ * - Wrap calls to the repository
+ * - Manage cache, loading, error states automatically
+ * - Support cancellation via AbortSignal
+ * - Invalidate cache appropriately on mutations
+ *
+ * Pattern: one file per entity (useAccount.ts, usePolicy.ts, etc.)
+ *
+ * The relative imports below already match the destination location
+ * (`src/hooks/`), not the current location of this file in
+ * `src/_examples/`. After copying, no path adjustments are needed.
+ *
+ * This file is excluded from TypeScript compilation
+ * (see tsconfig.app.json `exclude`).
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -18,7 +32,7 @@ import {
   createEntity,
   updateEntity,
   deleteEntity,
-} from '../services/repositories/_template';
+} from '../services/repositories/<entityName>';
 import type { CreateEntityData, UpdateEntityData } from '../types';
 
 // ============================================
@@ -38,7 +52,7 @@ export const entityKeys = {
 // ============================================
 
 /**
- * Hook para obtener lista de entidades.
+ * Hook to fetch the entity list.
  */
 export function useEntities() {
   return useQuery({
@@ -48,7 +62,7 @@ export function useEntities() {
 }
 
 /**
- * Hook para obtener una entidad por ID.
+ * Hook to fetch a single entity by ID.
  */
 export function useEntity(id: string) {
   return useQuery({
@@ -63,7 +77,7 @@ export function useEntity(id: string) {
 // ============================================
 
 /**
- * Hook para crear una entidad.
+ * Hook to create an entity.
  */
 export function useCreateEntity() {
   const queryClient = useQueryClient();
@@ -77,7 +91,7 @@ export function useCreateEntity() {
 }
 
 /**
- * Hook para actualizar una entidad.
+ * Hook to update an entity.
  */
 export function useUpdateEntity() {
   const queryClient = useQueryClient();
@@ -92,7 +106,7 @@ export function useUpdateEntity() {
 }
 
 /**
- * Hook para eliminar una entidad.
+ * Hook to delete an entity.
  */
 export function useDeleteEntity() {
   const queryClient = useQueryClient();
