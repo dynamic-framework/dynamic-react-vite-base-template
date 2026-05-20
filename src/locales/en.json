@@ -24,6 +24,7 @@
     "delete": "Delete",
     "edit": "Edit",
     "search": "Search",
+    "searchPlaceholder": "Search...",
     "noResults": "No results found",
     "placeholder": "Type to filter..."
   },
@@ -31,10 +32,15 @@
     "entityList": {
       "title": "Entities",
       "addNew": "Add new",
+      "create": "Create",
       "modalTitle": "New entity",
       "fieldName": "Name",
       "empty": "No entities yet. Click 'Add new' to create your first one.",
       "error": "Could not load entities"
+    },
+    "entityCreate": {
+      "title": "Create {{type}}",
+      "body": "Form placeholder. In a real widget this would contain inputs for the new entity."
     }
   }
 }
