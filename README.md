@@ -43,6 +43,7 @@ npm run dev
 | `npm run test` | Ejecuta tests con Vitest |
 | `npm run push` | Build + push a Modyo |
 | `npm run push:publish` | Build + push + publish a Modyo |
+| `npm run push:debug` | Build + push con logging de diagnóstico |
 
 ## Estructura del Proyecto
 
@@ -64,23 +65,27 @@ npm run dev
 
 Para hacer push a Modyo:
 
-1. Copia el archivo de ejemplo:
+1. Copia el archivo de configuración (`.modyo` es el método recomendado):
    ```bash
-   cp .env.example .env
+   cp .modyo.example .modyo   # recomendado
+   # o alternativamente:
+   cp .env.example .env       # soportado, pero deprecado en el CLI
    ```
 
-2. Configura las variables requeridas en `.env`:
+2. Configura las variables requeridas:
    - `MODYO_ACCOUNT_URL` - URL de tu cuenta Modyo
    - `MODYO_TOKEN` - Token de acceso (generar en Admin > Settings > API Access)
-   - `MODYO_SITE_HOST` - Host del sitio destino
+   - `MODYO_WIDGET_NAME` - Nombre del widget en la plataforma
+   - `MODYO_SITE_HOST` - Host del sitio destino (o `MODYO_SITE_ID`)
 
 3. Ejecuta el push:
    ```bash
-   npm run push           # Solo push
-   npm run push:publish   # Push + publicar
+   npm run push           # Build + push a Modyo
+   npm run push:publish   # Build + push + publicar
+   npm run push:debug     # Build + push con logging de diagnóstico
    ```
 
-Ver `.env.example` para todas las opciones disponibles y la [documentación de Modyo CLI](https://docs.modyo.com/en/platform/tools/cli.html) para más detalles.
+Ver `.modyo.example` para todas las opciones disponibles y la [documentación de Modyo CLI](https://docs.modyo.com/en/platform/tools/cli.html) para más detalles.
 
 ## Code Splitting
 
@@ -130,7 +135,7 @@ Output en `build/`:
 - [Dynamic UI Storybook](https://react.dynamicframework.dev/)
 - [Dynamic Framework Docs](https://dynamic.modyo.com/)
 - [Vite Documentation](https://vite.dev/)
-- [Modyo CLI Documentation](https://docs.modyo.com/en/platform/cli)
+- [Modyo CLI Documentation](https://docs.modyo.com/en/platform/tools/cli.html)
 
 ## Licencia
 
