@@ -6,7 +6,7 @@
  *      (convention: camelCase `use` + PascalCase entity,
  *       e.g. `useAccount.ts`, `usePolicy.ts`)
  *   2. Rename `entityKeys`/`useEntities`/etc. to your actual entity
- *   3. Point the repository import at `<entityName>` (not `_template`)
+ *   3. Point the repository import at `<EntityName>Repository` (not `_template`)
  *
  * These hooks:
  * - Wrap calls to the repository
@@ -32,7 +32,7 @@ import {
   createEntity,
   updateEntity,
   deleteEntity,
-} from '../services/repositories/<entityName>';
+} from '../services/repositories/<EntityName>Repository';
 import type { CreateEntityData, UpdateEntityData } from '../types';
 
 // ============================================
