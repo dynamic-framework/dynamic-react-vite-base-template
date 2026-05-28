@@ -12,7 +12,7 @@ adapt them to your widget's domain.
 | Reference file              | Destination location                       | Naming convention            |
 |-----------------------------|--------------------------------------------|------------------------------|
 | `MockTemplate.ts`           | `src/services/mocks/<entityName>.ts`       | `mockEntities` → `mock<Entity>` |
-| `RepositoryTemplate.ts`     | `src/services/repositories/<entityName>.ts`| `getEntities` → `get<Entity>` |
+| `RepositoryTemplate.ts`     | `src/services/repositories/<EntityName>Repository.ts` | `getEntities` → `get<Entity>` |
 | `QueryHookTemplate.ts`      | `src/hooks/use<EntityName>.ts`             | `useEntities` → `use<Entity>` |
 | `EntityListScreen.tsx`      | `src/screens/<EntityName>ListScreen.tsx`   | (Composes the above) |
 

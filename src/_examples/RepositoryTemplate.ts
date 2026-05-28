@@ -2,8 +2,9 @@
  * Repository Template — Reference Example
  *
  * This file is a reference scaffold. To use:
- *   1. Copy this file to `src/services/repositories/<entityName>.ts`
- *      (convention: PascalCase entity, e.g. `Account.ts`, `Policy.ts`)
+ *   1. Copy this file to `src/services/repositories/<EntityName>Repository.ts`
+ *      (convention: PascalCase entity + `Repository.ts` suffix,
+ *      e.g. `AccountRepository.ts`, `PolicyRepository.ts`)
  *   2. Rename `Entity`/`mockEntities` references to your actual entity
  *   3. Update the endpoint paths (`/entities`) to your API surface
  *   4. Adjust the mapper to translate API shape → domain shape
