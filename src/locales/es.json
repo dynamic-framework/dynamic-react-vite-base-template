@@ -39,7 +39,7 @@
       "error": "No se pudieron cargar las entidades"
     },
     "entityCreate": {
-      "title": "Crear {{type}}",
+      "title": "Crear {type}",
       "body": "Placeholder del formulario. En un widget real esto contendría inputs para la nueva entidad."
     }
   }

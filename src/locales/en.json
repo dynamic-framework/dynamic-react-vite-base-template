@@ -39,7 +39,7 @@
       "error": "Could not load entities"
     },
     "entityCreate": {
-      "title": "Create {{type}}",
+      "title": "Create {type}",
       "body": "Form placeholder. In a real widget this would contain inputs for the new entity."
     }
   }
