@@ -9,7 +9,6 @@
   "exclude": [
     "node_modules",
     "dist",
-    "build",
     "src/modyo-preview-entry.ts",
     "src/_examples/MockTemplate.ts",
     "src/_examples/QueryHookTemplate.ts",

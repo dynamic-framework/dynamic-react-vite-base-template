@@ -30,7 +30,6 @@ yalc.lock
 .modyo
 
 # build directories
-build
 dist
 
 # modyo-cli artifacts
