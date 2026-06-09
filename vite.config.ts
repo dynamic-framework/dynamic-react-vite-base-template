@@ -37,7 +37,6 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 2000,
     minify: 'esbuild',
-    outDir: 'build',
     assetsDir: '',
     rollupOptions: {
       output: {

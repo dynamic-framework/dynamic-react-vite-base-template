@@ -126,7 +126,7 @@ npm run test -- --coverage
 npm run build
 ```
 
-Output en `build/`:
+Output en `dist/`:
 - `main.js` - Bundle JavaScript
 - `main.css` - Estilos compilados
 

@@ -23,10 +23,26 @@ MODYO_SITE_HOST=my-site
 
 # --- ⚙️  OPCIONALES: push ----------------------------------------------------
 
+# Versión de la plataforma Modyo (8 | 9 | 10) — Default: 9
+# Usado en: push, preview
 # MODYO_VERSION=9
-# MODYO_BUILD_DIRECTORY=build
+
+# Directorio que contiene el resultado del build — Default: dist
+# Usado en: push
+# MODYO_BUILD_DIRECTORY=dist
+
+# Nombre del script de build a ejecutar (definido en package.json) — Default: build
+# Usado en: push
 # MODYO_BUILD_COMMAND=build
+
+# Regex de archivos a excluir del bundle subido a la plataforma
+# Ejemplo: \.map$ (excluir source maps)
+# Usado en: push
 # MODYO_REGEX_EXCLUDE=
+
+# Regex para deshabilitar el procesamiento Liquid en archivos que coincidan
+# Útil cuando el widget usa sintaxis {{ }} que conflictúa con Liquid
+# Usado en: push
 # MODYO_DISABLE_LIQUID_REGEX=
 
 # --- ⚙️  OPCIONALES: push --zip (code splitting, solo Webpack) ---------------
