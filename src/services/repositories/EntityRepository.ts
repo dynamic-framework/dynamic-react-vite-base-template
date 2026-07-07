@@ -25,8 +25,8 @@ export async function getEntities(signal?: AbortSignal): Promise<Entity[]> {
   if (USE_MOCKS) {
     await delay(MOCK_DELAY);
     signal?.throwIfAborted();
-    // Return a copy so callers can't mutate the shared fixture.
-    return [...mockEntities];
+    // Return independent copies so callers can't mutate the shared fixture.
+    return mockEntities.map((entity) => ({ ...entity }));
   }
 
   const response = await api.get<ApiEntity[]>('/entities', { signal });
