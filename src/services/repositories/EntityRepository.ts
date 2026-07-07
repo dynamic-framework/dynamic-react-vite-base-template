@@ -1,8 +1,10 @@
 /**
  * EntityRepository — canonical repository example.
  *
- * Repositories are pure functions (no internal state — that's TanStack Query's
- * job) that either return mocks or call the API depending on `USE_MOCKS`, and
+ * Repositories are stateless as far as the app is concerned — caching and
+ * loading state are TanStack Query's job. (In mock mode `createEntity` mutates
+ * the in-memory fixture below; that's a mock-only convenience, not repository
+ * state.) They return mocks or call the API depending on `USE_MOCKS`, and
  * translate API shapes into domain types. Mirrors the structure of
  * `src/services/api/`. Copy this file to
  * `src/services/repositories/<EntityName>Repository.ts` (PascalCase entity +
@@ -22,7 +24,9 @@ const MOCK_DELAY = 500; // ms
 export async function getEntities(signal?: AbortSignal): Promise<Entity[]> {
   if (USE_MOCKS) {
     await delay(MOCK_DELAY);
-    return mockEntities;
+    signal?.throwIfAborted();
+    // Return a copy so callers can't mutate the shared fixture.
+    return [...mockEntities];
   }
 
   const response = await api.get<ApiEntity[]>('/entities', { signal });
