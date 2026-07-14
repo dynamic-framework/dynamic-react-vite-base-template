@@ -5,8 +5,15 @@ import MyComponent from '../../src/components/MyComponent';
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string, options?: Record<string, unknown>) => (
+      options ? `${key} ${JSON.stringify(options)}` : key
+    ),
   }),
+}));
+
+// Mock widgetConfig to control SITE_LANG in tests
+vi.mock('../../src/config/widgetConfig', () => ({
+  SITE_LANG: 'en',
 }));
 
 // Mock MyLogos component
@@ -27,6 +34,11 @@ describe('<MyComponent />', () => {
     const button = screen.getByText('Click me!');
     fireEvent.click(button);
     expect(screen.getByTestId('my-logos')).toBeInTheDocument();
+  });
+
+  it('should render the site language label with the correct interpolation params', () => {
+    render(<MyComponent />);
+    expect(screen.getByText('siteLang {"lang":"en"}')).toBeInTheDocument();
   });
 
   it('should hide logos when "Click me!" button is clicked twice', () => {

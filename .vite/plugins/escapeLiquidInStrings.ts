@@ -1,7 +1,8 @@
 import type { Plugin } from 'vite';
 
 /**
- * Escapes the exact JS string literals "{{" and "}}" in the bundle output.
+ * Escapes the exact JS string literals "{{" and "}}" (single- or double-quoted)
+ * in the bundle output.
  *
  * Unicode escapes (\u007B\u007B = {{ and \u007D\u007D = }}) are:
  *  - Transparent to JavaScript: interpreted correctly at runtime
@@ -15,8 +16,8 @@ export default function escapeLiquidInStrings(): Plugin {
       for (const chunk of Object.values(bundle)) {
         if (chunk.type === 'chunk' && chunk.code) {
           chunk.code = chunk.code
-            .replace(/"\{\{"/g, '"\\u007B\\u007B"')
-            .replace(/"\}\}"/g, '"\\u007D\\u007D"');
+            .replace(/(["'])\{\{\1/g, '$1\\u007B\\u007B$1')
+            .replace(/(["'])\}\}\1/g, '$1\\u007D\\u007D$1');
         }
       }
     },
