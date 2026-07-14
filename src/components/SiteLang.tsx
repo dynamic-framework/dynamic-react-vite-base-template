@@ -1,5 +1,5 @@
-import { useTranslation } from "react-i18next";
-import { SITE_LANG } from "../config/widgetConfig";
+import { useTranslation } from 'react-i18next';
+import { SITE_LANG } from '../config/widgetConfig';
 
 export default function SiteLang() {
 	const { t } = useTranslation();
