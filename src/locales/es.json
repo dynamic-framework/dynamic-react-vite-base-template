@@ -1,5 +1,6 @@
 {
   "title": "Bienvenido al template de widget Modyo",
+  "siteLang": "Este sitio está en: {lang}",
   "states": {
     "loading": "Cargando...",
     "empty": {

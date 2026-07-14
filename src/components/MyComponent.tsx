@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import MyLink from './MyLink';
 import MyLogos from './MyLogos';
+import SiteLang from './SiteLang';
 
 export default function MyComponent() {
   const { t } = useTranslation();
@@ -17,6 +18,7 @@ export default function MyComponent() {
         'align-items-center justify-content-center',
       )}
     >
+      <SiteLang />
       <h1 className="fw-semibold text-center">{t('title')}</h1>
       <p className="h5 text-muted text-center py-4">
         Get started by editing
