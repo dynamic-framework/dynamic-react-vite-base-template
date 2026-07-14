@@ -120,6 +120,61 @@ npm run test -- --watch
 npm run test -- --coverage
 ```
 
+## Manejo de Liquid
+
+Modyo procesa el contenido de un widget como una plantilla Liquid antes de servirlo, por lo que cualquier `{{ }}` o `{% %}` que aparezca "suelto" en el bundle (por ejemplo dentro de un string JS, un JSON o una clase CSS) puede ser interpretado y removido/reemplazado por el motor de Liquid del sitio, rompiendo el widget en producción.
+
+Para evitar esto, el template incluye:
+
+- **`src/config/liquid.json` + `src/utils/liquidParser.ts`**: helper que resuelve tags Liquid (`{{site.language}}`, `{{vars.mi-variable}}`, etc.) contra un mock local en desarrollo (usando `liquidjs`) y los deja pasar tal cual en producción, donde Modyo los reemplaza en el servidor. Úsalo cuando necesites leer variables o contexto del sitio (`site.*`, `vars.*`) desde el código:
+  ```ts
+  import liquidParser from '../utils/liquidParser';
+
+  const siteName = liquidParser.parse('{{site.name}}');
+  ```
+  Los valores mock para desarrollo local se configuran en `src/config/liquid.json`.
+
+- **Plugin `escapeLiquidInStrings` (`.vite/plugins/escapeLiquidInStrings.ts`)**: se ejecuta solo en `build` y escapa los literales `"{{"` y `"}}"` que queden en el bundle final (por ejemplo, texto de UI que contenga esos caracteres sin ser Liquid intencional) convirtiéndolos a `\u007B\u007B` / `\u007D\u007D`. Esto es transparente para JS pero invisible para el parser de Liquid, evitando falsos positivos al momento del renderizado en Modyo.
+
+**¿Cuándo usar cada uno?**
+- Si necesitas **leer** una variable/config que vive en el sitio Modyo (idioma, nombre del sitio, variables custom) → usa `liquidParser`.
+- Si tienes **texto estático** (traducciones, contenido) que por coincidencia contiene `{{` o `}}` y no quieres que Modyo lo interprete → el plugin ya lo resuelve automáticamente en build, no requiere acción extra. Si ves comportamientos raros con Liquid en producción que no ocurren en local, revisa primero si el string problemático pasa por alguno de estos dos mecanismos.
+
+## Internacionalización (i18n)
+
+El template usa [`i18next`](https://www.i18next.com/) junto a [`react-i18next`](https://react.dev.i18next.com/) como librería de internacionalización, integradas mediante el helper `configureI18n` de `@dynamic-framework/ui-react`.
+
+Configuración (`src/config/i18nConfig.ts`):
+
+```ts
+import { configureI18n } from '@dynamic-framework/ui-react';
+
+import en from '../locales/en.json';
+import es from '../locales/es.json';
+
+import { SITE_LANG } from './widgetConfig';
+
+const resources = {
+  es: { translation: es },
+  en: { translation: en },
+};
+
+configureI18n(resources, { lng: SITE_LANG });
+```
+
+- Las traducciones viven en `src/locales/*.json` (uno por idioma).
+- El idioma inicial se toma de `SITE_LANG` (resuelto vía Liquid desde `{{site.language}}`, ver sección anterior), de modo que el widget arranca en el idioma configurado en el sitio de Modyo.
+- Para cambiar de idioma en runtime se expone `changeLanguage(lang)` desde el mismo archivo.
+- En componentes se usa el hook estándar de `react-i18next`:
+  ```tsx
+  import { useTranslation } from 'react-i18next';
+
+  const { t } = useTranslation();
+  t('siteLang', { lang: SITE_LANG });
+  ```
+
+**Si quieres usar otra librería de i18n**, ten en cuenta que `@dynamic-framework/ui-react` expone algunos componentes que dependen internamente de `i18next`/`react-i18next` (a través de `configureI18n`), por lo que no podrás remover esas dependencias por completo. Puedes sí evitar usar `configureI18n` y `useTranslation` en tu propio código y reemplazarlos por tu librería preferida (p. ej. `react-intl`, `lingui`), inicializándola en paralelo y usándola en tus componentes; solo asegúrate de mantener sincronizado el idioma inicial con `SITE_LANG` si necesitas que ambos sistemas reflejen el idioma del sitio.
+
 ## Build de Producción
 
 ```bash
