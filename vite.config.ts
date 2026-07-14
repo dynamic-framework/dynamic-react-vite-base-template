@@ -3,11 +3,13 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
 import svgr from 'vite-plugin-svgr';
+import escapeLiquidInStrings from './.vite/plugins/escapeLiquidInStrings';
 
 export default defineConfig({
   plugins: [
     svgr(),
     react(),
+    escapeLiquidInStrings(),
   ],
   server: {
     cors: true,
