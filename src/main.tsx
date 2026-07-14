@@ -6,6 +6,7 @@ import './config/i18nConfig';
 
 import App from './App';
 
+// Comment or remove this line if your Modyo's site has already loaded the Dynamic UI CSS, otherwise it will be loaded twice and may cause style issues.
 import '@dynamic-framework/ui-react/dist/css/dynamic-ui.css';
 import './styles/base.scss';
 
