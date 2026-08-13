@@ -1,5 +1,9 @@
+import { DAlert } from "@dynamic-framework/ui-react";
+
 export default function ImportedComponent() {
   return (
-    <p>Imported component from chunk file</p>
+    <DAlert color="info">
+      Imported component from chunk file
+    </DAlert>
   )
 }

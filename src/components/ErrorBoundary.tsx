@@ -1,4 +1,4 @@
-import { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Translation } from 'react-i18next';
 import { DAlert, DButton, DIcon } from '@dynamic-framework/ui-react';
 

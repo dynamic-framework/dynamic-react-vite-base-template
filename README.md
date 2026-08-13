@@ -167,8 +167,15 @@ Para hacer push a Modyo con code splitting:
    ```bash
    MODYO_ACCOUNT_URL=https://tu-cuenta.modyo.cloud
    MODYO_TOKEN=tu-token
-   MODYO_SITE_HOST=tu-sitio
+   MODYO_VERSION=tu-modyo-version
+   MODYO_SITE_HOST=tu-sitio-host
+   # or
+   # MODYO_SITE_ID=tu-sitio-id
+   MODYO_WIDGET_NAME=tu-widget-name
+   MODYO_BUILD_DIRECTORY=tu-build-directory
    MODYO_ZIP=true  # ⚠️ REQUERIDO para code splitting
+   MODYO_ZIP_ENTRY_JS=tu-entry.js # ⚠️ REQUERIDO para code splitting (default: main.js)
+   MODYO_ZIP_ENTRY_CSS=tu-entry.css # ⚠️ REQUERIDO para code splitting (default: main.css)
    ```
 
 3. Ejecuta el push:

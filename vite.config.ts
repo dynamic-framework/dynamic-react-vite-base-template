@@ -4,12 +4,14 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import svgr from 'vite-plugin-svgr';
 import transformDynamicImports from '@dynamic-framework/vite-plugin-transform-dynamic-imports';
+// import escapeLiquidInStrings from './.vite/plugins/escapeLiquidInStrings';
 
 export default defineConfig({
   plugins: [
     svgr(),
     react(),
-    transformDynamicImports()
+    transformDynamicImports(),
+    // escapeLiquidInStrings(), // Uncomment this line to enable the escapeLiquidInStrings plugin
   ],
   resolve: {
     alias: {
