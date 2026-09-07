@@ -41,3 +41,7 @@ dist-perf
 dist-viz
 .perf/stats.json
 .perf/results-*.json
+
+# artefactos de la validacion B1
+dist-perf-base
+dist-perf-b1
