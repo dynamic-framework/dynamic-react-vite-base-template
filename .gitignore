@@ -36,3 +36,8 @@ dist
 .zip
 widget*.zip
 .debug
+# baseline de performance (rama perf/baseline-v1.2.0)
+dist-perf
+dist-viz
+.perf/stats.json
+.perf/results-*.json
