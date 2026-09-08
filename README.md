@@ -148,6 +148,117 @@ Para evitar esto, el template incluye:
   Esto mantiene un solo punto de import de `liquidParser`, evita duplicar tags Liquid dispersos por el código y facilita ubicar/mockear todas las variables del sitio en un solo lugar. Solo importa `liquidParser` directamente si estás agregando una variable nueva a `widgetConfig.ts`.
 - Si tienes **texto estático** (traducciones, contenido) que por coincidencia contiene `{{` o `}}` y no quieres que Modyo lo interprete → el plugin ya lo resuelve automáticamente en build, no requiere acción extra. Si ves comportamientos raros con Liquid en producción que no ocurren en local, revisa primero si el string problemático pasa por alguno de estos dos mecanismos.
 
+## Iconos y tamaño del bundle
+
+El template incluye un segundo plugin local de Vite, `lucideSubset`
+(`.vite/plugins/lucideSubset.ts`), registrado en `vite.config.ts` junto a
+`escapeLiquidInStrings`.
+
+### Qué hace
+
+`@dynamic-framework/ui-react` resuelve los iconos por nombre en tiempo de
+ejecución: hace `import * as LucideIcons from 'lucide-react'` y luego
+`icons[nombre]`. Ese acceso dinámico impide el tree-shaking, así que sin el
+plugin el bundle se lleva **el catálogo completo de Lucide** (1 648 módulos de
+icono) para pintar unos pocos.
+
+El plugin intercepta el especificador `lucide-react` **solo cuando quien lo
+importa es código de Dynamic**, y le sirve un módulo con los iconos que este
+widget necesita. Para la biblioteca no cambia nada: sigue recibiendo un objeto
+namespace y `icons[nombre]` sigue funcionando.
+
+Los iconos incluidos son la unión de:
+
+1. **Catastro del código**: todos los string literals de `src/**/*.{ts,tsx}` que
+   coincidan con un nombre real de icono de Lucide. Se recolectan con el parser
+   de TypeScript, y **no solo en posición de atributo JSX**: si pasas el nombre a
+   un envoltorio (`<MyLink icon="Book" />`), el literal se detecta en el sitio de
+   llamada. También los que están en arrays, en mapas de constantes o como
+   default de una prop.
+2. **Núcleo de Dynamic**: los iconos que los propios componentes usan por dentro
+   (la X de `DAlert`, los chevrons de `DCollapse`, el ojo de `DInputPassword`,
+   etc.). No hay que declararlos: se incluyen siempre.
+3. **La opción `include`** (ver abajo).
+
+Solo actúa en `build`. En `npm run dev` y en el preview del CLI de Modyo el
+widget ve Lucide entero, que es lo que quieres mientras iteras: cualquier nombre
+de icono funciona sin tocar configuración.
+
+Cada build escribe `dist/icons-manifest.json` con la lista final y de dónde vino
+cada nombre. Es el primer sitio donde mirar si un icono no aparece.
+
+### Cómo declarar iconos calculados
+
+Si el nombre del icono se decide en tiempo de ejecución, el catastro solo lo
+encuentra si el nombre está como string literal **en alguna parte** de `src/`.
+Eso cubre casi todos los casos reales:
+
+```tsx
+// Se detecta: los tres nombres son literales del archivo.
+const TYPE_ICONS = { car: 'Car', home: 'Home', health: 'HeartPulse' };
+<DIcon icon={TYPE_ICONS[type]} />
+```
+
+```tsx
+// Se detecta: basta con declarar los nombres posibles en una constante.
+export const WIDGET_ICONS = ['Rocket', 'Star', 'Wallet'] as const;
+```
+
+El único caso que el catastro **no** puede ver es un nombre que nunca aparece en
+el código, por ejemplo si llega desde la API de Modyo o desde un JSON de
+contenido. Para eso está `include`, en `vite.config.ts`:
+
+```ts
+lucideSubset({
+  // Nombres que este widget puede pintar y que no están como literal en src/.
+  include: ['Rocket', 'Star', 'Wallet'],
+  strict: false,
+}),
+```
+
+`include` va en `vite.config.ts` y no en `src/config/widgetConfig.ts` a
+propósito: es configuración de build, la revisa `tsc` junto al resto de la
+config, y mantener una sola fuente evita que el plugin tenga que interpretar
+código de la aplicación. Si prefieres tenerlo junto al resto de la configuración
+del widget, la vía documentada arriba —una constante con los nombres en `src/`—
+consigue lo mismo sin pasar por `include`.
+
+Si un nombre de `include` no existe en Lucide, el build avisa y lo omite en vez
+de fallar.
+
+### Opciones
+
+| Opción | Por defecto | Qué hace |
+| --- | --- | --- |
+| `include` | `[]` | Nombres de icono que no aparecen como literal en `src/`. |
+| `strict` | `false` | Si es `true`, **falla el build** cuando encuentra una prop de icono con expresión no literal (`icon={algo}`, `iconStart={…}`, `iconEnd={…}`) en `src/` y `include` está vacío. Útil para garantizar que ningún icono se pierda en silencio. Está desactivado por defecto porque el propio template tiene dos envoltorios legítimos (`MyLink`, `EmptyState`) cuyos nombres sí están como literales en el código que los invoca. |
+| `disabled` | `false` | Desactiva el plugin por completo; el bundle vuelve a llevar Lucide entero. |
+
+### Cómo desactivarlo
+
+En `vite.config.ts`, pasa `disabled: true`:
+
+```ts
+lucideSubset({ disabled: true }),
+```
+
+o quita la entrada del array `plugins`. Es lo primero que conviene probar si
+sospechas que el plugin es la causa de un icono que no se pinta.
+
+### Si un icono no aparece
+
+El modo de fallo es **silencioso**: cuando el nombre no está en el bundle,
+Dynamic no lanza ningún error, renderiza `<i class="d-icon bi bi-<Nombre>"></i>`
+y simplemente no se ve nada. Eso ya pasa hoy con cualquier nombre que no exista
+en Lucide; el plugin amplía el conjunto de nombres que caen en ese camino. Para
+diagnosticar:
+
+1. Mira `dist/icons-manifest.json` y comprueba si el nombre está en `included`.
+2. Si no está, revisa que sea un nombre válido de Lucide en PascalCase
+   (`ArrowLeft`, no `arrow-left` ni `check`).
+3. Agrégalo con `include`, o declara el nombre como literal en `src/`.
+4. Para confirmar que el plugin es la causa, compara con `disabled: true`.
+
 ## Internacionalización (i18n)
 
 El template usa [`i18next`](https://www.i18next.com/) junto a [`react-i18next`](https://react.dev.i18next.com/) como librería de internacionalización, integradas mediante el helper `configureI18n` de `@dynamic-framework/ui-react`.
