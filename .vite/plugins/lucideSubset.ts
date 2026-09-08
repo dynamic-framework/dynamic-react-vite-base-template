@@ -282,6 +282,21 @@ export function resolveLucidePaths(root: string, uiReactDir: string): LucidePath
   return { packageDir, esmDir, indexFile, version };
 }
 
+/**
+ * Normalizes an externally supplied list of icon names: trims each entry, drops
+ * the blank ones, and removes duplicates.
+ *
+ * Both lists it is applied to come from outside this file -- `include` is
+ * hand-written in vite.config.ts, and the core set is read from the installed
+ * package's dist/icons-core.json -- so neither is guaranteed to be tidy. A
+ * blank entry can never match an icon and used to be reported as an omitted
+ * name, which rendered the warning as a stray comma; a padded entry like
+ * `'Book '` never matched the real export either.
+ */
+export function normalizeNames(names: string[]): string[] {
+  return [...new Set(names.map((name) => name.trim()).filter((name) => name !== ''))];
+}
+
 /** Locates the directory of the installed @dynamic-framework/ui-react. */
 export function resolveUiReactDir(root: string): string {
   const pkgJsonPath = createRequire(path.join(root, 'package.json'))
@@ -368,13 +383,11 @@ export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin 
 
       // 2. Dynamic's core.
       const core = loadCoreIcons(uiReactDir);
-      // Deduplicated before filtering: `include` is hand-written and
-      // dist/icons-core.json comes from the installed package, so neither is
-      // guaranteed to be duplicate-free. `included` is a Set already, so a
-      // repeat could never reach the virtual module, but it would show up
-      // twice in icons-manifest.json and in the warnings below -- and the
-      // manifest is the artifact the README tells you to read.
-      const coreNames = [...new Set(core.names)];
+      // Normalized before filtering: neither list is guaranteed to be tidy.
+      // `included` is a Set already, so a repeat could never reach the virtual
+      // module, but an untidy entry would show up in icons-manifest.json -- the
+      // artifact the README tells you to read -- and in the warnings below.
+      const coreNames = normalizeNames(core.names);
       if (core.source === 'fallback') {
         this.warn(
           `usando la lista de respaldo del nucleo (${core.names.length} iconos): `
@@ -393,7 +406,7 @@ export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin 
       }
 
       // 3. Manually declared names.
-      const includeNames = [...new Set(include)];
+      const includeNames = normalizeNames(include);
       const fromInclude = includeNames.filter((name) => iconFileMap.has(name)).sort();
       unknownIncluded = includeNames.filter((name) => !iconFileMap.has(name));
       if (unknownIncluded.length > 0) {

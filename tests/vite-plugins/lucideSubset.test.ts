@@ -7,6 +7,7 @@ import lucideSubset, {
   buildIconFileMap,
   listSourceFiles,
   loadCoreIcons,
+  normalizeNames,
   resolveLucidePaths,
   resolveUiReactDir,
   scanSource,
@@ -174,6 +175,24 @@ describe('buildIconFileMap — mapeo nombre -> archivo', () => {
     expect(m.get('FooIcon')).toBe('./icons/foo.js');
     expect(m.has('Bar')).toBe(false);
     expect(m.has('icons')).toBe(false);
+  });
+});
+
+describe('normalizeNames — saneado de listas externas', () => {
+  it('descarta entradas vacias y de solo espacios', () => {
+    expect(normalizeNames(['', '   ', '\t', 'Book'])).toEqual(['Book']);
+  });
+
+  it('recorta los espacios de alrededor', () => {
+    expect(normalizeNames(['  Book  ', 'Plus\n'])).toEqual(['Book', 'Plus']);
+  });
+
+  it('deduplica, incluso cuando los duplicados difieren en espacios', () => {
+    expect(normalizeNames(['Book', 'Book ', ' Book'])).toEqual(['Book']);
+  });
+
+  it('no altera una lista ya limpia', () => {
+    expect(normalizeNames(['Book', 'Plus'])).toEqual(['Book', 'Plus']);
   });
 });
 
@@ -471,6 +490,30 @@ describe('manifest', () => {
     for (const key of ['included', 'fromSource', 'fromCore', 'fromInclude'] as const) {
       expect(manifest[key]).toEqual([...new Set(manifest[key])]);
     }
+  });
+
+  it('no avisa de nombres omitidos cuando include solo trae blancos', async () => {
+    // Antes estas entradas llegaban a unknownIncluded y el aviso se renderizaba
+    // como una coma sin nada delante: `... y se omiten: ,    `.
+    const plugin = lucideSubset({ include: ['', '   '] });
+    const { ctx, warnings, emitted } = makeContext();
+    hook(plugin, 'configResolved').call(null, { root: ROOT });
+    await hook(plugin, 'buildStart').call(ctx);
+    hook(plugin, 'generateBundle').call(ctx);
+
+    expect(warnings.some((w) => w.includes('se omiten'))).toBe(false);
+    expect(JSON.parse(emitted[0].source).fromInclude).toEqual([]);
+  });
+
+  it('acepta un nombre de include con espacios alrededor', async () => {
+    const plugin = lucideSubset({ include: ['  Rocket  '] });
+    const { ctx, warnings, emitted } = makeContext();
+    hook(plugin, 'configResolved').call(null, { root: ROOT });
+    await hook(plugin, 'buildStart').call(ctx);
+    hook(plugin, 'generateBundle').call(ctx);
+
+    expect(JSON.parse(emitted[0].source).fromInclude).toEqual(['Rocket']);
+    expect(warnings.some((w) => w.includes('se omiten'))).toBe(false);
   });
 
   it('avisa y omite nombres de include que no existen en Lucide', async () => {
