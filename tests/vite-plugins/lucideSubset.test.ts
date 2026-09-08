@@ -332,6 +332,35 @@ describe('load — modulo virtual', () => {
     expect(code).toContain('as createLucideIcon');
   });
 
+  it('no duplica exports cuando un NON_ICON_EXPORT entra por include', async () => {
+    // `Icon` y `createLucideIcon` son exports del indice de Lucide y estan en
+    // iconFileMap, asi que pueden llegar a `included` y volver a emitirse en el
+    // loop de NON_ICON_EXPORTS. Dos `export { default as Icon }` en el mismo
+    // modulo es JS invalido: rollup aborta con `Duplicate export "Icon"`.
+    const plugin = lucideSubset({ include: ['Icon'] });
+    const { ctx } = makeContext();
+    hook(plugin, 'configResolved').call(null, { root: ROOT });
+    await hook(plugin, 'buildStart').call(ctx);
+    const code = await hook(plugin, 'load').call(ctx, '\0virtual:lucide-subset') as string;
+
+    expect(code.match(/ as Icon \}/g)).toHaveLength(1);
+    expect(code).toContain(' as Icon }');
+  });
+
+  it('no emite ningun nombre dos veces', async () => {
+    const plugin = lucideSubset({ include: ['Icon', 'createLucideIcon'] });
+    const { ctx } = makeContext();
+    hook(plugin, 'configResolved').call(null, { root: ROOT });
+    await hook(plugin, 'buildStart').call(ctx);
+    const code = await hook(plugin, 'load').call(ctx, '\0virtual:lucide-subset') as string;
+
+    const names = [...code.matchAll(/export \{ default as (\w+) \}/g)].map((m) => m[1]);
+    expect(names).toEqual([...new Set(names)]);
+    // Y no se pierde nada: los dos siguen presentes una vez.
+    expect(names).toContain('Icon');
+    expect(names).toContain('createLucideIcon');
+  });
+
   it('devuelve null para cualquier otro id', async () => {
     const plugin = lucideSubset();
     const { ctx } = makeContext();

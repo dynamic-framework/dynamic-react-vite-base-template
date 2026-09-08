@@ -449,21 +449,29 @@ export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin 
         '',
       ];
 
-      for (const name of manifest.included) {
-        const relativeFile = iconFileMap.get(name)!;
-        // Ruta absoluta al modulo ESM del icono. Evita el especificador desnudo
-        // (que resolveria a CJS) y cualquier ciclo con este mismo plugin.
+      // Un nombre no puede exportarse dos veces: el modulo virtual seria JS
+      // invalido y rollup aborta con `Duplicate export "X"`. `Icon` y
+      // `createLucideIcon` estan en iconFileMap, asi que pueden entrar por
+      // `included` -- por `include` o por un string literal en src/ que
+      // coincida con su nombre -- y volver a salir en NON_ICON_EXPORTS.
+      const exported = new Set<string>();
+      const addExport = (name: string, relativeFile: string) => {
+        if (exported.has(name)) return;
+        exported.add(name);
+        // Ruta absoluta al modulo ESM. Evita el especificador desnudo (que
+        // resolveria a CJS) y cualquier ciclo con este mismo plugin.
         const absolute = path.resolve(paths.esmDir, relativeFile).split(path.sep).join('/');
         lines.push(`export { default as ${name} } from ${JSON.stringify(absolute)};`);
-      }
+      };
+
+      for (const name of manifest.included) addExport(name, iconFileMap.get(name)!);
 
       // Exports del indice que no son iconos, para no dejar huecos en el
       // namespace que ve ui-react.
       for (const name of NON_ICON_EXPORTS) {
         const relativeFile = iconFileMap.get(name);
         if (!relativeFile) continue;
-        const absolute = path.resolve(paths.esmDir, relativeFile).split(path.sep).join('/');
-        lines.push(`export { default as ${name} } from ${JSON.stringify(absolute)};`);
+        addExport(name, relativeFile);
       }
 
       return `${lines.join('\n')}\n`;
