@@ -15,7 +15,8 @@ export default defineConfig({
     // Build-only; under dev and the CLI preview the full Lucide is visible.
     // include: icon names the widget computes at runtime and that do not
     //   appear as a string literal in src/. See the README.
-    // strict: fails the build on icon={expression} when include is empty.
+    // strict: fails the build on icon={expression} when include contributes
+    //   no valid icon name.
     lucideSubset({
       include: [],
       strict: false,

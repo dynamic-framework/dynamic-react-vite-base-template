@@ -389,6 +389,34 @@ describe('strict — props de icono no literales', () => {
     expect(() => hook(plugin, 'buildStart').call(ctx)).not.toThrow();
   });
 
+  it('falla cuando include solo trae nombres que no son exports de Lucide', () => {
+    // Un include no vacio pero enteramente invalido se filtra completo, asi que
+    // el conjunto de iconos queda igual de indeterminado que con include: [].
+    // La guarda mira fromInclude por eso: con include.length el build pasaba.
+    const plugin = lucideSubset({ strict: true, include: ['NoExisteEsteIcono'] });
+    const { ctx, errors, warnings } = makeContext();
+    hook(plugin, 'configResolved').call(null, { root: ROOT });
+    expect(() => hook(plugin, 'buildStart').call(ctx)).toThrow(/strict/);
+    expect(errors[0]).toContain('MyLink.tsx');
+    // Y ademas avisa de que el nombre no existe: los dos signos, no uno.
+    expect(warnings.some((w) => w.includes('NoExisteEsteIcono'))).toBe(true);
+  });
+
+  it('falla cuando include solo trae un string vacio', () => {
+    const plugin = lucideSubset({ strict: true, include: [''] });
+    const { ctx } = makeContext();
+    hook(plugin, 'configResolved').call(null, { root: ROOT });
+    expect(() => hook(plugin, 'buildStart').call(ctx)).toThrow(/strict/);
+  });
+
+  it('no falla si include mezcla un nombre valido con uno invalido', () => {
+    // Basta un nombre determinable para que strict quede satisfecho.
+    const plugin = lucideSubset({ strict: true, include: ['NoExisteEsteIcono', 'Rocket'] });
+    const { ctx } = makeContext();
+    hook(plugin, 'configResolved').call(null, { root: ROOT });
+    expect(() => hook(plugin, 'buildStart').call(ctx)).not.toThrow();
+  });
+
   it('no falla con strict desactivado', () => {
     const plugin = lucideSubset({ strict: false });
     const { ctx } = makeContext();

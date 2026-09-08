@@ -118,7 +118,9 @@ export type LucideSubsetOptions = {
   include?: string[];
   /**
    * When `true`, fails the build if it finds an icon prop with a non-literal
-   * expression (`icon={something}`) in `src/**` and `include` is empty.
+   * expression (`icon={something}`) in `src/**` and `include` contributes no
+   * valid icon name -- either because it is empty, or because every name in it
+   * was rejected for not being a Lucide export.
    *
    * For projects that want a guarantee that no icon is dropped silently.
    * Defaults to `false`, because the template itself has two legitimate
@@ -401,13 +403,18 @@ export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin 
         );
       }
 
-      if (strict && dynamicSites.length > 0 && include.length === 0) {
+      // La condicion es fromInclude, no include: un `include` con nombres que
+      // no son exports de Lucide se filtra entero y deja el conjunto sin
+      // determinar igual que un `include` vacio. Mirar include.length dejaba
+      // pasar el build con include: ['NoExiste'] o include: [''].
+      if (strict && dynamicSites.length > 0 && fromInclude.length === 0) {
         const detail = dynamicSites
           .map((site) => `  ${site.file}:${site.line}  ${site.text}`)
           .join('\n');
         this.error(
-          'strict: hay props de icono con expresion no literal y "include" esta vacio, '
-          + 'asi que esos iconos no se pueden determinar en tiempo de build:\n'
+          'strict: hay props de icono con expresion no literal y "include" no aporta '
+          + 'ningun nombre valido de icono, asi que esos iconos no se pueden determinar '
+          + 'en tiempo de build:\n'
           + `${detail}\n`
           + 'Declara los nombres posibles en la opcion "include" del plugin, ponlos como '
           + 'string literal en src/, o desactiva strict.',
