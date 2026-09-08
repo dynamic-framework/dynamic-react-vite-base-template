@@ -10,14 +10,18 @@ import type { Plugin } from 'vite';
  * un modulo virtual que solo reexporta los iconos que este widget necesita.
  *
  * El problema: `ui-react` resuelve iconos con `import * as LucideIcons from
- * 'lucide-react'` y luego `icons[nombre]`. Ese acceso dinamico impide el
- * tree-shaking, asi que el bundle se lleva el catalogo completo de Lucide
- * (mas de 1,6k modulos de icono) para pintar un punado.
+ * 'lucide-react'` y luego, dentro de `DIconBase`, `const icons = LucideIcons`
+ * seguido de `icons[nombre]`. Ese acceso dinamico impide el tree-shaking, asi
+ * que el bundle se lleva el catalogo completo de Lucide (mas de 1,6k modulos de
+ * icono) para pintar un punado.
+ *
+ * Cuidado con el nombre: ese `icons` es el objeto namespace del modulo, no el
+ * export `icons` del indice de Lucide, que es otra cosa (ver NON_ICON_EXPORTS).
  *
  * La solucion: interceptar el especificador `lucide-react` SOLO cuando quien lo
  * importa vive dentro de `@dynamic-framework/ui-react`, y servirle un modulo
  * con los N iconos que hacen falta. El objeto namespace que ve `ui-react` pasa a
- * tener N entradas en vez de miles, y `icons[nombre]` sigue funcionando igual:
+ * tener N entradas en vez de miles, y ese `icons[nombre]` sigue funcionando:
  * no hay que tocar la biblioteca.
  *
  * Los N se calculan como la union de tres conjuntos:
@@ -42,7 +46,9 @@ const LUCIDE_SPECIFIER = 'lucide-react';
  * modulo virtual para que el namespace que ve `ui-react` no pierda nada que no
  * sea un icono. Pesan unos pocos bytes.
  *
- * `icons` queda fuera a proposito: es el namespace de todo el catalogo
+ * El export `icons` del indice queda fuera a proposito, y no hay que
+ * confundirlo con el `const icons = LucideIcons` de `DIconBase`: este es el
+ * objeto namespace del modulo, aquel es un mapa con todo el catalogo
  * (`export { index as icons }` en el indice ESM) y reintroducirlo anularia todo
  * el efecto del plugin.
  */
@@ -53,9 +59,12 @@ const NON_ICON_EXPORTS = ['createLucideIcon', 'Icon'];
  * Dynamic resuelven por su cuenta, sin que el widget los mencione.
  *
  * Se usa cuando el `@dynamic-framework/ui-react` instalado no publica
- * `dist/icons-core.json` (2.8.0 y 2.9.0 no lo hacen). Verificado contra
- * ui-react en `origin/develop`; ver _reports/iconos-confirmacion-2026-09-07.md
- * secciones 2.1 a 2.3.
+ * `dist/icons-core.json` (2.8.0 y 2.9.0 no lo hacen). La lista se obtuvo
+ * recorriendo los componentes de ui-react 2.8.0 en busca de los nombres que
+ * llegan a `DIcon`/`DIconBase` sin que el widget los mencione: la X de
+ * `DAlert`, los chevrons de `DCollapse`, el ojo de `DInputPassword`, etc.
+ * El test "los 27 nombres del respaldo existen en el lucide-react instalado"
+ * comprueba que todos sigan siendo exports validos de Lucide.
  *
  * Si Dynamic agrega un icono interno en una version futura y el paquete sigue
  * sin publicar el JSON, ese icono faltara: hay que agregarlo aqui o pasarlo por
