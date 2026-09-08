@@ -4,12 +4,23 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import svgr from 'vite-plugin-svgr';
 import escapeLiquidInStrings from './.vite/plugins/escapeLiquidInStrings';
+import lucideSubset from './.vite/plugins/lucideSubset';
 
 export default defineConfig({
   plugins: [
     svgr(),
     react(),
     escapeLiquidInStrings(),
+    // Reduces lucide-react to the subset of icons this widget uses.
+    // Build-only; under dev and the CLI preview the full Lucide is visible.
+    // include: icon names the widget computes at runtime and that do not
+    //   appear as a string literal in src/. See the README.
+    // strict: fails the build on icon={expression} when include contributes
+    //   no valid icon name.
+    lucideSubset({
+      include: [],
+      strict: false,
+    }),
   ],
   server: {
     cors: true,
