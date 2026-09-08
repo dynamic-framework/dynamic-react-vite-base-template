@@ -11,11 +11,11 @@ export default defineConfig({
     svgr(),
     react(),
     escapeLiquidInStrings(),
-    // Reduce lucide-react al subconjunto de iconos que este widget usa.
-    // Solo actua en build; en dev y en el preview del CLI se ve Lucide entero.
-    // include: nombres de icono que el widget calcula en runtime y que no
-    //   aparecen como string literal en src/. Ver README.
-    // strict: falla el build si hay icon={expresion} y include esta vacio.
+    // Reduces lucide-react to the subset of icons this widget uses.
+    // Build-only; under dev and the CLI preview the full Lucide is visible.
+    // include: icon names the widget computes at runtime and that do not
+    //   appear as a string literal in src/. See the README.
+    // strict: fails the build on icon={expression} when include is empty.
     lucideSubset({
       include: [],
       strict: false,

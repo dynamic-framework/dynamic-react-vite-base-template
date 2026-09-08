@@ -6,35 +6,35 @@ import ts from 'typescript';
 import type { Plugin } from 'vite';
 
 /**
- * Sustituye el modulo `lucide-react` que importa @dynamic-framework/ui-react por
- * un modulo virtual que solo reexporta los iconos que este widget necesita.
+ * Replaces the `lucide-react` module imported by @dynamic-framework/ui-react
+ * with a virtual module that only reexports the icons this widget needs.
  *
- * El problema: `ui-react` resuelve iconos con `import * as LucideIcons from
- * 'lucide-react'` y luego, dentro de `DIconBase`, `const icons = LucideIcons`
- * seguido de `icons[nombre]`. Ese acceso dinamico impide el tree-shaking, asi
- * que el bundle se lleva el catalogo completo de Lucide (mas de 1,6k modulos de
- * icono) para pintar un punado.
+ * The problem: `ui-react` resolves icons with `import * as LucideIcons from
+ * 'lucide-react'` and then, inside `DIconBase`, `const icons = LucideIcons`
+ * followed by `icons[name]`. That dynamic access defeats tree-shaking, so the
+ * bundle pulls in the whole Lucide catalog (over 1.6k icon modules) to paint a
+ * handful.
  *
- * Cuidado con el nombre: ese `icons` es el objeto namespace del modulo, no el
- * export `icons` del indice de Lucide, que es otra cosa (ver NON_ICON_EXPORTS).
+ * Mind the name: that `icons` is the module namespace object, not the `icons`
+ * export of Lucide's index, which is a different thing (see NON_ICON_EXPORTS).
  *
- * La solucion: interceptar el especificador `lucide-react` SOLO cuando quien lo
- * importa vive dentro de `@dynamic-framework/ui-react`, y servirle un modulo
- * con los N iconos que hacen falta. El objeto namespace que ve `ui-react` pasa a
- * tener N entradas en vez de miles, y ese `icons[nombre]` sigue funcionando:
- * no hay que tocar la biblioteca.
+ * The solution: intercept the `lucide-react` specifier ONLY when the importer
+ * lives inside `@dynamic-framework/ui-react`, and serve it a module with the N
+ * icons that are actually needed. The namespace object `ui-react` sees ends up
+ * with N entries instead of thousands, and that `icons[name]` keeps working:
+ * the library needs no changes.
  *
- * Los N se calculan como la union de tres conjuntos:
- *  1. Catastro: todos los string literals de `src/**` que coincidan con un
- *     export real de Lucide.
- *  2. Nucleo: los nombres que los propios componentes de Dynamic usan por
- *     dentro (`DAlert`, `DCollapse`, `DInputPassword`, ...).
- *  3. `include`: nombres que el widget calcula en tiempo de ejecucion y que por
- *     tanto no aparecen como literal en ninguna parte.
+ * N is the union of three sets:
+ *  1. Source scan: every string literal in `src/**` that matches a real Lucide
+ *     export.
+ *  2. Core: the names Dynamic's own components resolve internally (`DAlert`,
+ *     `DCollapse`, `DInputPassword`, ...).
+ *  3. `include`: names the widget computes at runtime, which therefore never
+ *     appear as a literal anywhere.
  *
- * Solo actua en `build` (`apply: 'build'`), igual que escapeLiquidInStrings. En
- * `vite dev` y en el preview del CLI de Modyo el widget ve Lucide completo, que
- * es lo deseable mientras se itera: cualquier nombre funciona.
+ * Build-only (`apply: 'build'`), like escapeLiquidInStrings. Under `vite dev`
+ * and the Modyo CLI preview the widget sees the full Lucide, which is what you
+ * want while iterating: any name works.
  */
 
 const VIRTUAL_ID = 'virtual:lucide-subset';
@@ -42,36 +42,36 @@ const RESOLVED_VIRTUAL_ID = `\0${VIRTUAL_ID}`;
 const LUCIDE_SPECIFIER = 'lucide-react';
 
 /**
- * Exports del indice de Lucide que no son iconos. Se incluyen siempre en el
- * modulo virtual para que el namespace que ve `ui-react` no pierda nada que no
- * sea un icono. Pesan unos pocos bytes.
+ * Exports of Lucide's index that are not icons. They are always included in the
+ * virtual module so the namespace `ui-react` sees loses nothing that is not an
+ * icon. They weigh a few bytes.
  *
- * El export `icons` del indice queda fuera a proposito, y no hay que
- * confundirlo con el `const icons = LucideIcons` de `DIconBase`: este es el
- * objeto namespace del modulo, aquel es un mapa con todo el catalogo
- * (`export { index as icons }` en el indice ESM) y reintroducirlo anularia todo
- * el efecto del plugin.
+ * The index's `icons` export is left out on purpose, and must not be confused
+ * with the `const icons = LucideIcons` in `DIconBase`: the latter is the module
+ * namespace object, the former is a map holding the entire catalog
+ * (`export { index as icons }` in the ESM index), and reintroducing it would
+ * defeat the whole point of the plugin.
  */
 const NON_ICON_EXPORTS = ['createLucideIcon', 'Icon'];
 
 /**
- * Respaldo del conjunto nucleo: los 27 nombres de Lucide que los componentes de
- * Dynamic resuelven por su cuenta, sin que el widget los mencione.
+ * Fallback for the core set: the 27 Lucide names Dynamic's components resolve
+ * on their own, without the widget ever mentioning them.
  *
- * Se usa cuando el `@dynamic-framework/ui-react` instalado no publica
- * `dist/icons-core.json` (2.8.0 y 2.9.0 no lo hacen). La lista se obtuvo
- * recorriendo los componentes de ui-react 2.8.0 en busca de los nombres que
- * llegan a `DIcon`/`DIconBase` sin que el widget los mencione: la X de
- * `DAlert`, los chevrons de `DCollapse`, el ojo de `DInputPassword`, etc.
- * El test "los 27 nombres del respaldo existen en el lucide-react instalado"
- * comprueba que todos sigan siendo exports validos de Lucide.
+ * Used when the installed `@dynamic-framework/ui-react` does not publish
+ * `dist/icons-core.json` (2.8.0 and 2.9.0 do not). The list was derived by
+ * walking ui-react 2.8.0's components for the names that reach
+ * `DIcon`/`DIconBase` without the widget mentioning them: the X in `DAlert`,
+ * the chevrons in `DCollapse`, the eye in `DInputPassword`, and so on. The test
+ * "los 27 nombres del respaldo existen en el lucide-react instalado" checks
+ * that they all remain valid Lucide exports.
  *
- * Si Dynamic agrega un icono interno en una version futura y el paquete sigue
- * sin publicar el JSON, ese icono faltara: hay que agregarlo aqui o pasarlo por
- * `include`.
+ * If Dynamic adds an internal icon in a future version and the package still
+ * does not publish the JSON, that icon will be missing: add it here or pass it
+ * through `include`.
  */
 const CORE_ICONS_FALLBACK = [
-  // Via 1 — defaults de iconMap en DContextProvider (17)
+  // Path 1 -- iconMap defaults in DContextProvider (17)
   'X',
   'ChevronUp',
   'ChevronDown',
@@ -89,7 +89,7 @@ const CORE_ICONS_FALLBACK = [
   'EyeOff',
   'Plus',
   'Minus',
-  // Via 2 — nombres incrustados en el JSX de los componentes (10)
+  // Path 2 -- names hardcoded in the components' JSX (10)
   'MoreVertical',
   'Paperclip',
   'Trash',
@@ -102,52 +102,52 @@ const CORE_ICONS_FALLBACK = [
   'Circle',
 ];
 
-/** Props de los componentes de Dynamic que reciben un nombre de icono. */
+/** Props of Dynamic's components that take an icon name. */
 const ICON_PROPS = new Set(['icon', 'iconStart', 'iconEnd']);
 
 export type LucideSubsetOptions = {
   /**
-   * Nombres de icono que el widget resuelve en tiempo de ejecucion y que no
-   * aparecen como string literal en `src/**` (por ejemplo, los que llegan
-   * desde la API de Modyo o desde un JSON de contenido).
+   * Icon names the widget resolves at runtime and that do not appear as a
+   * string literal in `src/**` (for instance, ones arriving from the Modyo API
+   * or from a content JSON).
    *
-   * Casi nunca hace falta: el catastro recolecta TODOS los literales de
-   * `src/**`, asi que declarar los nombres en una constante del propio codigo
-   * ya basta. Ver el README.
+   * Rarely needed: the source scan collects EVERY literal in `src/**`, so
+   * declaring the names in a constant in your own code is already enough. See
+   * the README.
    */
   include?: string[];
   /**
-   * Si es `true`, falla el build cuando encuentra una prop de icono con una
-   * expresion no literal (`icon={algo}`) en `src/**` y `include` esta vacio.
+   * When `true`, fails the build if it finds an icon prop with a non-literal
+   * expression (`icon={something}`) in `src/**` and `include` is empty.
    *
-   * Sirve para proyectos que quieran garantizar que ningun icono se pierde en
-   * silencio. Por defecto `false`, porque el propio template tiene dos
-   * envoltorios legitimos (`MyLink`, `EmptyState`) cuyos nombres si estan como
-   * literales en el codigo que los invoca.
+   * For projects that want a guarantee that no icon is dropped silently.
+   * Defaults to `false`, because the template itself has two legitimate
+   * wrappers (`MyLink`, `EmptyState`) whose names do appear as literals in the
+   * code calling them.
    */
   strict?: boolean;
-  /** Desactiva el plugin por completo. Deja el bundle con Lucide entero. */
+  /** Turns the plugin off entirely, leaving the full Lucide in the bundle. */
   disabled?: boolean;
 };
 
 export type IconSourceScan = {
-  /** Todos los string literals encontrados. */
+  /** Every string literal found. */
   literals: Set<string>;
-  /** Props de icono con expresion no literal, para el modo `strict`. */
+  /** Icon props holding a non-literal expression, for `strict` mode. */
   dynamicSites: Array<{ file: string; line: number; prop: string; text: string }>;
 };
 
 /**
- * Recolecta los string literals de un archivo TS/TSX usando el parser de
- * TypeScript, y anota las props de icono cuyo valor no es un literal.
+ * Collects the string literals of a TS/TSX file using the TypeScript parser,
+ * and records the icon props whose value is not a literal.
  *
- * Recolecta TODOS los literales, no solo los que estan en posicion de atributo
- * JSX: los envoltorios como `MyLink` reciben el nombre por prop, asi que el
- * literal vive en el sitio de llamada (`<MyLink icon="Book" />`) y a veces en
- * un array o un mapa de constantes. Filtrar por posicion perderia esos casos.
+ * It collects EVERY literal, not only those in JSX attribute position:
+ * wrappers like `MyLink` receive the name through a prop, so the literal lives
+ * at the call site (`<MyLink icon="Book" />`) and sometimes inside an array or
+ * a map of constants. Filtering by position would miss those cases.
  *
- * Los falsos positivos (un string que casualmente se llama igual que un icono)
- * son aceptables: cuestan un icono de mas en el bundle.
+ * False positives (a string that happens to match an icon name) are
+ * acceptable: they cost one extra icon in the bundle.
  */
 export function scanSource(code: string, file: string): IconSourceScan {
   const literals = new Set<string>();
@@ -169,8 +169,8 @@ export function scanSource(code: string, file: string): IconSourceScan {
       literals.add(node.text);
     }
 
-    // Prop de icono con expresion: `icon={algo}`. Un `icon={'Book'}` cuenta
-    // como literal y no como sitio dinamico.
+    // Icon prop holding an expression: `icon={something}`. An `icon={'Book'}`
+    // counts as a literal, not as a dynamic site.
     if (ts.isJsxAttribute(node) && ts.isIdentifier(node.name) && ICON_PROPS.has(node.name.text)) {
       const { initializer } = node;
       if (initializer && ts.isJsxExpression(initializer)) {
@@ -195,7 +195,7 @@ export function scanSource(code: string, file: string): IconSourceScan {
   return { literals, dynamicSites };
 }
 
-/** Recorre un directorio y devuelve las rutas de los archivos .ts/.tsx. */
+/** Walks a directory and returns the paths of its .ts/.tsx files. */
 export function listSourceFiles(dir: string): string[] {
   if (!fs.existsSync(dir)) return [];
   const out: string[] = [];
@@ -215,14 +215,15 @@ export function listSourceFiles(dir: string): string[] {
 }
 
 /**
- * Construye el mapa nombre de export -> archivo de icono leyendo el indice ESM
- * de Lucide con el parser de TypeScript.
+ * Builds the export name -> icon file map by reading Lucide's ESM index with
+ * the TypeScript parser.
  *
- * No se deriva de una transformacion PascalCase -> kebab a proposito. El indice
- * es la fuente de verdad de que alias existen, y la transformacion falla en los
- * limites letra/digito: `Share2` deberia dar `share-2.js` y da `share2.js`, que
- * no existe. Cuatro de los 27 nombres del nucleo son alias deprecados
- * (`AlertCircle` -> `circle-alert.js`) que tampoco se derivan del nombre.
+ * Deliberately not derived from a PascalCase -> kebab transformation. The index
+ * is the source of truth for which aliases exist, and the transformation breaks
+ * at letter/digit boundaries: `Share2` should yield `share-2.js` and yields
+ * `share2.js`, which does not exist. Four of the 27 core names are deprecated
+ * aliases (`AlertCircle` -> `circle-alert.js`) that cannot be derived from the
+ * name either.
  */
 export function buildIconFileMap(indexCode: string, indexFile = 'lucide-react.js'): Map<string, string> {
   const map = new Map<string, string>();
@@ -231,12 +232,12 @@ export function buildIconFileMap(indexCode: string, indexFile = 'lucide-react.js
   for (const statement of sourceFile.statements) {
     if (!ts.isExportDeclaration(statement)) continue;
     const { moduleSpecifier, exportClause } = statement;
-    // `export { index as icons };` no tiene moduleSpecifier: se ignora.
+    // `export { index as icons };` has no moduleSpecifier: skip it.
     if (!moduleSpecifier || !ts.isStringLiteral(moduleSpecifier)) continue;
     if (!exportClause || !ts.isNamedExports(exportClause)) continue;
 
     for (const specifier of exportClause.elements) {
-      // Solo interesa `export { default as Nombre } from './...'`.
+      // Only `export { default as Name } from './...'` is of interest.
       if (!specifier.propertyName || specifier.propertyName.text !== 'default') continue;
       map.set(specifier.name.text, moduleSpecifier.text);
     }
@@ -253,17 +254,17 @@ export type LucidePaths = {
 };
 
 /**
- * Ubica el `lucide-react` que resolveria `@dynamic-framework/ui-react`.
+ * Locates the `lucide-react` that `@dynamic-framework/ui-react` would resolve.
  *
- * Se resuelve desde el `package.json` de ui-react, no desde la raiz del
- * proyecto: asi se encuentra tambien una copia anidada en
- * `node_modules/@dynamic-framework/ui-react/node_modules/lucide-react`, que es
- * lo que ocurre si los rangos de version no permiten izarla.
+ * Resolution starts from ui-react's `package.json`, not from the project root,
+ * so a nested copy at
+ * `node_modules/@dynamic-framework/ui-react/node_modules/lucide-react` is found
+ * too, which is what happens when version ranges prevent hoisting it.
  *
- * Se resuelve `lucide-react/package.json` y no el especificador desnudo porque
- * `lucide-react` no declara `exports` y su `main` apunta a `dist/cjs`: pedir el
- * paquete devolveria CommonJS, y lo que hace falta son los modulos ESM por
- * icono.
+ * It resolves `lucide-react/package.json` rather than the bare specifier
+ * because `lucide-react` declares no `exports` and its `main` points at
+ * `dist/cjs`: asking for the package would return CommonJS, and what is needed
+ * are the per-icon ESM modules.
  */
 export function resolveLucidePaths(root: string, uiReactDir: string): LucidePaths {
   const uiReactPkg = path.join(uiReactDir, 'package.json');
@@ -279,7 +280,7 @@ export function resolveLucidePaths(root: string, uiReactDir: string): LucidePath
   return { packageDir, esmDir, indexFile, version };
 }
 
-/** Ubica el directorio del @dynamic-framework/ui-react instalado. */
+/** Locates the directory of the installed @dynamic-framework/ui-react. */
 export function resolveUiReactDir(root: string): string {
   const pkgJsonPath = createRequire(path.join(root, 'package.json'))
     .resolve('@dynamic-framework/ui-react/package.json');
@@ -292,12 +293,12 @@ export type CoreIcons = {
 };
 
 /**
- * Lee el conjunto nucleo de `dist/icons-core.json` del ui-react instalado.
+ * Reads the core set from `dist/icons-core.json` of the installed ui-react.
  *
- * Acepta dos formas, porque el archivo todavia no existe en ninguna version
- * publicada y su forma final no esta fijada: un array de strings, o un objeto
- * con la clave `icons`. Si no existe o no se puede leer, cae al respaldo
- * embebido.
+ * Two shapes are accepted, because the file does not yet exist in any
+ * published version and its final shape is not settled: an array of strings,
+ * or an object with an `icons` key. If it is missing or unreadable, this falls
+ * back to the embedded list.
  */
 export function loadCoreIcons(uiReactDir: string): CoreIcons {
   const jsonPath = path.join(uiReactDir, 'dist', 'icons-core.json');
@@ -309,7 +310,7 @@ export function loadCoreIcons(uiReactDir: string): CoreIcons {
         return { names: [...names], source: 'package' };
       }
     } catch {
-      // Formato inesperado: se usa el respaldo y se avisa desde el plugin.
+      // Unexpected shape: fall back to the embedded list and warn from the plugin.
     }
   }
   return { names: [...CORE_ICONS_FALLBACK], source: 'fallback' };
@@ -336,9 +337,9 @@ export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin 
   return {
     name: 'lucide-subset',
     apply: 'build',
-    // `pre` es necesario: el plugin interno vite:resolve tambien responde al
-    // especificador `lucide-react`, y en resolveId gana el primero que
-    // contesta.
+    // `pre` is required: the internal vite:resolve plugin also answers the
+    // `lucide-react` specifier, and in resolveId the first one to answer
+    // wins.
     enforce: 'pre',
 
     configResolved(config) {
@@ -352,7 +353,7 @@ export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin 
       paths = resolveLucidePaths(root, uiReactDir);
       iconFileMap = buildIconFileMap(fs.readFileSync(paths.indexFile, 'utf8'), paths.indexFile);
 
-      // 1. Catastro del codigo del widget.
+      // 1. Scan of the widget's own code.
       const srcDir = path.join(root, 'src');
       const literals = new Set<string>();
       const dynamicSites: IconSourceScan['dynamicSites'] = [];
@@ -363,7 +364,7 @@ export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin 
       }
       const fromSource = [...literals].filter((name) => iconFileMap.has(name)).sort();
 
-      // 2. Nucleo de Dynamic.
+      // 2. Dynamic's core.
       const core = loadCoreIcons(uiReactDir);
       if (core.source === 'fallback') {
         this.warn(
@@ -382,7 +383,7 @@ export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin 
         );
       }
 
-      // 3. Nombres declarados a mano.
+      // 3. Manually declared names.
       const fromInclude = include.filter((name) => iconFileMap.has(name)).sort();
       unknownIncluded = include.filter((name) => !iconFileMap.has(name));
       if (unknownIncluded.length > 0) {
@@ -420,18 +421,17 @@ export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin 
       if (disabled) return null;
       if (source !== LUCIDE_SPECIFIER || !importer) return null;
 
-      // Guarda por importador: solo se sustituye Lucide para el codigo de
-      // Dynamic. Un widget que importe iconos directamente
-      // (`import { Rocket } from 'lucide-react'`) sigue viendo el paquete real,
-      // y por tanto no se rompe.
+      // Importer guard: Lucide is only substituted for Dynamic's code. A
+      // widget importing icons directly
+      // (`import { Rocket } from 'lucide-react'`) still sees the real package,
+      // and therefore does not break.
       //
-      // La alternativa seria aliasar `lucide-react` globalmente en
-      // resolve.alias, pero eso afectaria tambien al widget y crearia un ciclo:
-      // el alias es una sustitucion de prefijo indiferente al importador, asi
-      // que un modulo virtual que reexportara desde 'lucide-react' se
-      // resolveria a si mismo. Aqui no hay ciclo posible porque el modulo
-      // virtual reexporta por ruta absoluta, sin volver al especificador
-      // desnudo.
+      // The alternative would be aliasing `lucide-react` globally in
+      // resolve.alias, but that would hit the widget too and would create a
+      // cycle: an alias is a prefix substitution blind to the importer, so a
+      // virtual module reexporting from 'lucide-react' would resolve to
+      // itself. No cycle is possible here because the virtual module reexports
+      // by absolute path, never going back to the bare specifier.
       const uiReactDir = resolveUiReactDir(root);
       const normalized = importer.split(path.sep).join('/');
       const uiReactPrefix = `${uiReactDir.split(path.sep).join('/')}/`;
@@ -449,25 +449,25 @@ export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin 
         '',
       ];
 
-      // Un nombre no puede exportarse dos veces: el modulo virtual seria JS
-      // invalido y rollup aborta con `Duplicate export "X"`. `Icon` y
-      // `createLucideIcon` estan en iconFileMap, asi que pueden entrar por
-      // `included` -- por `include` o por un string literal en src/ que
-      // coincida con su nombre -- y volver a salir en NON_ICON_EXPORTS.
+      // A name must not be exported twice: the virtual module would be
+      // invalid JS and rollup aborts with `Duplicate export "X"`. `Icon` and
+      // `createLucideIcon` are in iconFileMap, so they can come in through
+      // `included` -- via `include`, or via a string literal in src/ matching
+      // their name -- and come out again in NON_ICON_EXPORTS.
       const exported = new Set<string>();
       const addExport = (name: string, relativeFile: string) => {
         if (exported.has(name)) return;
         exported.add(name);
-        // Ruta absoluta al modulo ESM. Evita el especificador desnudo (que
-        // resolveria a CJS) y cualquier ciclo con este mismo plugin.
+        // Absolute path to the ESM module. Avoids the bare specifier (which
+        // would resolve to CJS) and any cycle with this same plugin.
         const absolute = path.resolve(paths.esmDir, relativeFile).split(path.sep).join('/');
         lines.push(`export { default as ${name} } from ${JSON.stringify(absolute)};`);
       };
 
       for (const name of manifest.included) addExport(name, iconFileMap.get(name)!);
 
-      // Exports del indice que no son iconos, para no dejar huecos en el
-      // namespace que ve ui-react.
+      // Index exports that are not icons, so the namespace ui-react sees has
+      // no holes.
       for (const name of NON_ICON_EXPORTS) {
         const relativeFile = iconFileMap.get(name);
         if (!relativeFile) continue;
