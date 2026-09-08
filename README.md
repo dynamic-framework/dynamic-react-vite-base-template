@@ -159,8 +159,8 @@ El template incluye un segundo plugin local de Vite, `lucideSubset`
 `@dynamic-framework/ui-react` resuelve los iconos por nombre en tiempo de
 ejecución: hace `import * as LucideIcons from 'lucide-react'` y luego
 `icons[nombre]`. Ese acceso dinámico impide el tree-shaking, así que sin el
-plugin el bundle se lleva **el catálogo completo de Lucide** (1 648 módulos de
-icono) para pintar unos pocos.
+plugin el bundle se lleva **el catálogo completo de Lucide** (más de 1,6k
+módulos de icono) para pintar unos pocos.
 
 El plugin intercepta el especificador `lucide-react` **solo cuando quien lo
 importa es código de Dynamic**, y le sirve un módulo con los iconos que este

@@ -12,7 +12,7 @@ import type { Plugin } from 'vite';
  * El problema: `ui-react` resuelve iconos con `import * as LucideIcons from
  * 'lucide-react'` y luego `icons[nombre]`. Ese acceso dinamico impide el
  * tree-shaking, asi que el bundle se lleva el catalogo completo de Lucide
- * (1 648 modulos de icono) para pintar un punado.
+ * (mas de 1,6k modulos de icono) para pintar un punado.
  *
  * La solucion: interceptar el especificador `lucide-react` SOLO cuando quien lo
  * importa vive dentro de `@dynamic-framework/ui-react`, y servirle un modulo
@@ -42,7 +42,7 @@ const LUCIDE_SPECIFIER = 'lucide-react';
  * modulo virtual para que el namespace que ve `ui-react` no pierda nada que no
  * sea un icono. Pesan unos pocos bytes.
  *
- * `icons` queda fuera a proposito: es el namespace de los 1 648 iconos
+ * `icons` queda fuera a proposito: es el namespace de todo el catalogo
  * (`export { index as icons }` en el indice ESM) y reintroducirlo anularia todo
  * el efecto del plugin.
  */

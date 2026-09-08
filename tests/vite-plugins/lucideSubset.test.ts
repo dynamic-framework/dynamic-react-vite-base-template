@@ -179,20 +179,31 @@ describe('buildIconFileMap — mapeo nombre -> archivo', () => {
 
 describe('loadCoreIcons — nucleo y respaldo', () => {
   it('usa el respaldo embebido de 27 nombres cuando el paquete no publica icons-core.json', () => {
-    const uiReactDir = resolveUiReactDir(ROOT);
-    expect(fs.existsSync(path.join(uiReactDir, 'dist', 'icons-core.json'))).toBe(false);
-    const core = loadCoreIcons(uiReactDir);
-    expect(core.source).toBe('fallback');
-    expect(core.names).toHaveLength(27);
-    expect(new Set(core.names).size).toBe(27);
+    // Directorio sintetico sin dist/icons-core.json, en vez del ui-react
+    // instalado: el camino del respaldo se cubre igual cuando Dynamic 2.10
+    // empiece a publicar el archivo.
+    const dir = fs.mkdtempSync(path.join(ROOT, 'node_modules', '.tmp-core-'));
+    try {
+      const core = loadCoreIcons(dir);
+      expect(core.source).toBe('fallback');
+      expect(core.names).toHaveLength(27);
+      expect(new Set(core.names).size).toBe(27);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('los 27 nombres del respaldo existen en el lucide-react instalado', () => {
     const { indexFile } = resolveLucidePaths(ROOT, resolveUiReactDir(ROOT));
     const map = buildIconFileMap(fs.readFileSync(indexFile, 'utf8'), indexFile);
-    const core = loadCoreIcons(resolveUiReactDir(ROOT));
-    const missing = core.names.filter((name) => !map.has(name));
-    expect(missing).toEqual([]);
+    const dir = fs.mkdtempSync(path.join(ROOT, 'node_modules', '.tmp-core-'));
+    try {
+      const core = loadCoreIcons(dir);
+      const missing = core.names.filter((name) => !map.has(name));
+      expect(missing).toEqual([]);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('lee un icons-core.json en forma de array', () => {
@@ -237,12 +248,19 @@ describe('loadCoreIcons — nucleo y respaldo', () => {
     }
   });
 
-  it('avisa en el build cuando usa el respaldo', async () => {
+  it('avisa en el build si y solo si el nucleo viene del respaldo', async () => {
     const plugin = lucideSubset();
-    const { ctx, warnings } = makeContext();
+    const { ctx, warnings, emitted } = makeContext();
     hook(plugin, 'configResolved').call(null, { root: ROOT });
     await hook(plugin, 'buildStart').call(ctx);
-    expect(warnings.some((w) => w.includes('lista de respaldo del nucleo'))).toBe(true);
+    hook(plugin, 'generateBundle').call(ctx);
+
+    // Con 2.8.0/2.9.0 el nucleo sale del respaldo y hay aviso; a partir de
+    // 2.10 sale del paquete y no debe haberlo. El test se ata a coreSource,
+    // no a la version instalada.
+    const { coreSource } = JSON.parse(emitted[0].source);
+    const aviso = warnings.some((w) => w.includes('lista de respaldo del nucleo'));
+    expect(aviso).toBe(coreSource === 'fallback');
   });
 });
 
@@ -361,11 +379,14 @@ describe('manifest', () => {
     expect(emitted).toHaveLength(1);
     expect(emitted[0].fileName).toBe('icons-manifest.json');
     const manifest = JSON.parse(emitted[0].source);
-    expect(manifest.coreSource).toBe('fallback');
-    expect(manifest.lucideReact).toBe('0.553.0');
+    // Sin fijar version ni fuente del nucleo: ambas dependen de las
+    // dependencias instaladas y no de la correccion del plugin.
+    expect(['package', 'fallback']).toContain(manifest.coreSource);
+    expect(manifest.lucideReact)
+      .toBe(resolveLucidePaths(ROOT, resolveUiReactDir(ROOT)).version);
     expect(manifest.fromInclude).toEqual(['Rocket']);
     expect(manifest.fromSource).toContain('Book');
-    expect(manifest.fromCore).toContain('AlertCircle');
+    expect(manifest.fromCore.length).toBeGreaterThan(0);
     // included es la union sin duplicados y ordenada.
     const union = new Set([
       ...manifest.fromSource, ...manifest.fromCore, ...manifest.fromInclude,
