@@ -6,7 +6,11 @@ import tseslint from 'typescript-eslint';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
-  globalIgnores(['dist', 'src/_examples/**']),
+  // dist* cubre dist/ y los directorios de salida del rig de medicion
+  // (dist-perf, dist-viz, dist-cf-*, dist-m-*). .perf/ es instrumentacion de
+  // medicion: sus entries montan React fuera de un componente y no cumplen las
+  // reglas de react-refresh, que ahi no aportan nada. Ver .perf/README.md.
+  globalIgnores(['dist*', '.perf/**', 'src/_examples/**']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

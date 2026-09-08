@@ -36,8 +36,14 @@ dist
 .zip
 widget*.zip
 .debug
-# baseline de performance (rama perf/baseline-v1.2.0)
-dist-perf
+# rig de medicion de performance (ver .perf/README.md)
+# Se versionan los scripts y los vite.config del rig; lo que generan, no.
+dist-perf*
 dist-viz
+dist-cf-*
+dist-iife-*
+dist-m-*
+.perf/out
+.perf/probe
 .perf/stats.json
 .perf/results-*.json
