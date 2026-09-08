@@ -77,6 +77,7 @@ misma página (como haría el widget manager de Modyo).
 | `widget-entry-nocss.tsx` | Igual pero sin importar el CSS de Dynamic, para medir el escenario en que el sitio ya lo cargó. |
 | `widget-entry-visual.tsx` | Monta `App` más un `DAlert` cerrable, para verificar en navegador que se pintan tanto los iconos del widget como los internos de Dynamic. No se usa para medir bytes. |
 | `widget-entry-core-icons.tsx` | Monta los 27 iconos del núcleo más los 3 del widget por `DIcon`, y además cada componente de Dynamic que elige un icono del núcleo por su cuenta, en el estado que lo muestra. Incluye un icono propio registrado con `iconRegistry` y un nombre inexistente. No se usa para medir bytes. |
+| `widget-entry-motion.tsx` | Monta todo lo que en Dynamic pasa por `motion` o `AnimatePresence` con un disparador por pieza: `DModal` y `DOffcanvas` por `openPortal`, `DConfirmModal` por `useConfirmModal`, más `DAlert` y `DCollapse` como control. Para la medición contrafactual de framer-motion. **No sirve para medir bytes**: monta un `DToast`, que arrastra `react-hot-toast`. |
 
 ---
 
@@ -99,6 +100,12 @@ mandar cada variante a un directorio distinto.
 | `vite.config.m-visual-plugin.ts` | `iife` | `widget-entry-visual.tsx` | Verificación visual con `lucideSubset`. |
 | `vite.config.m-core-icons-base.ts` | `iife` | `widget-entry-core-icons.tsx` | Verificación de los iconos del núcleo sin el plugin. |
 | `vite.config.m-core-icons-plugin.ts` | `iife` | `widget-entry-core-icons.tsx` | La misma, con `lucideSubset`. |
+| `vite.config.m-cf-real.ts` | `iife` | `src/main.tsx` | Bundle real con el stub de motion. Extiende `vite.config.ts` con `mergeConfig`, así que hereda `lucideSubset`. |
+| `vite.config.m-cf-real-nolucide.ts` | `iife` | `src/main.tsx` | Bundle real con el stub de motion pero **sin** `lucideSubset`, para aislar la aportación de cada palanca. |
+| `vite.config.m-cf-motion.ts` | `iife` | `widget-entry.tsx` | Harness con `lucideSubset` + stub de motion. |
+| `vite.config.m-cf-motion-nolucide.ts` | `iife` | `widget-entry.tsx` | Harness con solo el stub de motion. |
+| `vite.config.m-cf-behav{3,4}.ts` | `iife` | `widget-entry-motion.tsx` | Las dos variantes de la comprobación de comportamiento. |
+| `vite.config.m-cf-viz.ts` | `iife` | `src/main.tsx` | La celda con stub de motion más el visualizer, para el desglose por paquete. |
 
 **Las dos configuraciones `*-plugin.ts` solo funcionan en
 `feat/lucide-subset-plugin`**, porque importan `./.vite/plugins/lucideSubset`,
@@ -139,6 +146,8 @@ cadena, para que el rebase de la cadena no las duplique ni las pierda.
 | --- | --- |
 | `cf-check.mjs` | Carga `perf-N.html`, registra errores de consola y excepciones de página, comprueba que cada instancia monte (botón, iconos de `MyLink`) y guarda una captura. `node .perf/cf-check.mjs <baseUrl> <n> <out.png>` |
 | `check-core-icons.mjs` | Sobre la página de `widget-entry-core-icons.tsx`: por cada nombre comprueba que exista un `<svg>` con la clase que Lucide compone, que el icono registrado se pinte como SVG en línea y que el inexistente caiga al fallback. Hace además una pasada de interacción (carga un archivo en `DBoxFile`, pulsa el ojo de `DInputPassword`) para los iconos que solo aparecen con estado. `node check-core-icons.mjs <url> <ruta/al/dist/esm/lucide-react.js> [outJson]` |
+| `check-motion-behaviour.mjs` | Sobre la página de `widget-entry-motion.tsx`: abre y cierra cada pieza, comprueba que el contenido esté en el DOM y que el nodo del portal quede vacío al cerrar (lo que detectaría un portal que no se desmonta), y guarda una captura de cada estado. `node check-motion-behaviour.mjs <url> <etiqueta> <dirCapturas> [outJson]` |
+| `check-motion-frames.mjs` | Muestrea opacidad, `transform` y posición a 30/80/160/320/900 ms tras abrir el modal y el offcanvas. El DOM final es igual con y sin motion: la diferencia está en los fotogramas intermedios y en los estilos en línea que `animate` fijaba. `node check-motion-frames.mjs <url> <etiqueta> <dirCapturas> [outJson]` |
 
 ### Análisis de bundle
 
@@ -165,6 +174,17 @@ archivo en el primer request, y brotli -q 11 sobre 2 MB tarda segundos. Sin él,
 la primera corrida de Lighthouse mide un servidor frío y sale fuera de rango.
 
 ---
+
+## Plugins de prueba
+
+`.perf/motionStub.ts` es un plugin de Vite **de prueba**, no del template: vive
+en `.perf/`, no en `.vite/plugins/`, y no está registrado en `vite.config.ts`.
+Sustituye `framer-motion` por un módulo virtual mínimo (`motion` como proxy que
+devuelve el elemento HTML equivalente descartando las props de animación, y
+`AnimatePresence` como Fragment), solo cuando el importador vive dentro de
+`node_modules/@dynamic-framework/ui-react/`. Su encabezado documenta qué se
+pierde con cada sustitución. Se usó para medir cuánto pesa la familia
+framer-motion en el chunk final y qué deja de funcionar sin ella.
 
 ## Cómo se lanza cada medición
 
