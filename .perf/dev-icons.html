@@ -1,0 +1,22 @@
+<!doctype html>
+<!--
+  Pagina de desarrollo del rig, para comprobar en `vite dev` el aviso por
+  icono desconocido de @dynamic-framework/ui-react (#1177). Ese aviso vive
+  detras de `process.env.NODE_ENV !== 'production'`, asi que desaparece del
+  build y solo se puede observar en el dev server.
+
+  Uso:
+    npx vite            # dev server en el puerto 5173
+    abrir http://127.0.0.1:5173/.perf/dev-icons.html
+-->
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rig — aviso de icono desconocido en dev</title>
+</head>
+<body>
+  <div data-widget-root="1" class="widget-name"></div>
+  <script type="module" src="/.perf/widget-entry-core-icons.tsx"></script>
+</body>
+</html>

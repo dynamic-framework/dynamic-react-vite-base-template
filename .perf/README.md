@@ -76,6 +76,7 @@ misma página (como haría el widget manager de Modyo).
 | `widget-entry.tsx` | El entry estándar. Añade marca de primer render por instancia y una sonda de identidad del módulo React, para contar copias en memoria. |
 | `widget-entry-nocss.tsx` | Igual pero sin importar el CSS de Dynamic, para medir el escenario en que el sitio ya lo cargó. |
 | `widget-entry-visual.tsx` | Monta `App` más un `DAlert` cerrable, para verificar en navegador que se pintan tanto los iconos del widget como los internos de Dynamic. No se usa para medir bytes. |
+| `widget-entry-core-icons.tsx` | Monta los 27 iconos del núcleo más los 3 del widget por `DIcon`, y además cada componente de Dynamic que elige un icono del núcleo por su cuenta, en el estado que lo muestra. Incluye un icono propio registrado con `iconRegistry` y un nombre inexistente. No se usa para medir bytes. |
 
 ---
 
@@ -96,6 +97,8 @@ mandar cada variante a un directorio distinto.
 | `vite.config.m-harness-plugin.ts` | `iife` | `widget-entry.tsx` | Harness con `lucideSubset`. |
 | `vite.config.m-visual-base.ts` | `iife` | `widget-entry-visual.tsx` | Verificación visual sin el plugin. |
 | `vite.config.m-visual-plugin.ts` | `iife` | `widget-entry-visual.tsx` | Verificación visual con `lucideSubset`. |
+| `vite.config.m-core-icons-base.ts` | `iife` | `widget-entry-core-icons.tsx` | Verificación de los iconos del núcleo sin el plugin. |
+| `vite.config.m-core-icons-plugin.ts` | `iife` | `widget-entry-core-icons.tsx` | La misma, con `lucideSubset`. |
 
 **Las dos configuraciones `*-plugin.ts` solo funcionan en
 `feat/lucide-subset-plugin`**, porque importan `./.vite/plugins/lucideSubset`,
@@ -126,6 +129,7 @@ cadena, para que el rebase de la cadena no las duplique ni las pierda.
 | `lh.mjs` | Lighthouse móvil con throttling por defecto, escenarios 1/3/5. |
 | `cf-lh.mjs` | Lo mismo pero con escenarios y corridas por argumento: `node .perf/cf-lh.mjs <baseUrl> <outJson> [escenarios=1,3] [corridas=3]` |
 | `m-lh-interleaved.mjs` | Lighthouse sobre **varias variantes intercaladas**: cada ronda mide todas las variantes y repite. Así una deriva térmica o de carga afecta por igual a todas en vez de castigar a la que se mida al final. `node .perf/m-lh-interleaved.mjs <outJson> <etiqueta>=<url> [...]` |
+| `m-lh-warmup.mjs` | Igual que el anterior, con dos añadidos: una **ronda de calentamiento** que se registra con `warmup: true` y no cuenta para la mediana, y el audit **`unused-javascript`** completo (bytes sin usar totales y por script). `node .perf/m-lh-warmup.mjs <outJson> <etiqueta>=<url> [...]` |
 | `cf-sizes.mjs` | `raw` / `gzip -9` / `brotli -q 11` de `widget.js` y `widget.css`. Salida JSON. |
 | `count-icons.mjs` | Cuenta los iconos de Lucide en un bundle. Se apoya en la factory de Lucide y tolera sus dos formas: con el nombre intacto y el nodo en una variable (`createLucideIcon("book",__iconNode$q)`) o minificada con el nodo en línea (`Mt("book",[["path",…)`). Exigir que el segundo argumento sea `[[` o `__iconNode` descarta falsos positivos como `addEventListener("click", handler)`. |
 
@@ -134,6 +138,7 @@ cadena, para que el rebase de la cadena no las duplique ni las pierda.
 | Script | Qué comprueba |
 | --- | --- |
 | `cf-check.mjs` | Carga `perf-N.html`, registra errores de consola y excepciones de página, comprueba que cada instancia monte (botón, iconos de `MyLink`) y guarda una captura. `node .perf/cf-check.mjs <baseUrl> <n> <out.png>` |
+| `check-core-icons.mjs` | Sobre la página de `widget-entry-core-icons.tsx`: por cada nombre comprueba que exista un `<svg>` con la clase que Lucide compone, que el icono registrado se pinte como SVG en línea y que el inexistente caiga al fallback. Hace además una pasada de interacción (carga un archivo en `DBoxFile`, pulsa el ojo de `DInputPassword`) para los iconos que solo aparecen con estado. `node check-core-icons.mjs <url> <ruta/al/dist/esm/lucide-react.js> [outJson]` |
 
 ### Análisis de bundle
 
@@ -141,6 +146,7 @@ cadena, para que el rebase de la cadena no las duplique ni las pierda.
 | --- | --- |
 | `aggregate-bundle.mjs` | Agrupa el `stats.json` del visualizer por dependencia (react, react-dom, ui-react, lucide-react, framer-motion, …) con bytes y porcentaje. **Los absolutos de gzip/brotli por dependencia están sobreestimados**, porque el visualizer comprime cada módulo por separado: los porcentajes de la columna raw son la señal fiable. |
 | `cf-packages.mjs` | Desglose por paquete npm de los módulos que aterrizan en `widget.js`. `node .perf/cf-packages.mjs <stats.json> [--json]` |
+| `m-composition.mjs` | Desglose por paquete npm con raw, gzip y brotli, top N más una fila «resto», y **cadenas de retención**: para cada paquete que `src/` no importa directamente, el camino más corto por `importedBy` hasta el módulo de `src/` que lo arrastra. `node .perf/m-composition.mjs <stats.json> [chunk=main.js] [topN=15]` |
 | `cf-retention.mjs` | Grafo de retención en `dist/index.esm.js` de ui-react: modela qué retiene Rollup cuando considera el módulo con efectos secundarios. |
 | `cf-toplevel.mjs` | Imports top-level del bundle de ui-react, con `acorn`. |
 | `cf-toplevel-scope.mjs` | Cuenta las declaraciones léxicas top-level (`const`/`let`/`class`) de un bundle. Es la medida que explica por qué el formato `es` rompe la segunda instancia servida con `<script>` clásico: en un script clásico todas las copias comparten el ámbito. `node .perf/cf-toplevel-scope.mjs <bundle.js>` |
@@ -260,3 +266,16 @@ npm ci   # restaura la versión del lockfile
   i18next cae a su idioma por defecto.
 - `dist-*` y `.perf/out` no se limpian solos. Conviene borrarlos entre tandas
   para no medir un directorio viejo por equivocación.
+- **`server.mjs` cachea el contenido de cada archivo en memoria** la primera vez
+  que se pide, para no recomprimir con brotli -q 11 en cada request. Si
+  reconstruyes un bundle sin reiniciar el servidor, seguirás midiendo el
+  anterior. Reinicia el servidor después de cada build.
+- El aviso por icono desconocido de Dynamic vive detrás de
+  `process.env.NODE_ENV !== 'production'`, así que **no existe en el build**:
+  solo se observa en el dev server. `.perf/dev-icons.html` sirve
+  `widget-entry-core-icons.tsx` desde `vite dev` justo para eso:
+
+  ```bash
+  npx vite --port 5199
+  # abrir http://127.0.0.1:5199/.perf/dev-icons.html
+  ```
