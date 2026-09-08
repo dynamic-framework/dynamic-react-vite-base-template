@@ -423,6 +423,28 @@ describe('manifest', () => {
     expect(manifest.included).toEqual([...union].sort());
   });
 
+  it('deduplica include: ni el manifest ni el aviso repiten un nombre', async () => {
+    // `include` lo escribe una persona a mano y el nucleo puede venir de un
+    // dist/icons-core.json del paquete: ninguno garantiza estar sin repetidos.
+    // `included` ya es un Set, asi que un repetido nunca llega al modulo
+    // virtual, pero si salia dos veces en el manifest y en el aviso.
+    const plugin = lucideSubset({ include: ['Rocket', 'Rocket', 'NoExisteEsteIcono', 'NoExisteEsteIcono'] });
+    const { ctx, warnings, emitted } = makeContext();
+    hook(plugin, 'configResolved').call(null, { root: ROOT });
+    await hook(plugin, 'buildStart').call(ctx);
+    hook(plugin, 'generateBundle').call(ctx);
+
+    const manifest = JSON.parse(emitted[0].source);
+    expect(manifest.fromInclude).toEqual(['Rocket']);
+    // El nombre inexistente se nombra una sola vez en el aviso.
+    const aviso = warnings.find((w) => w.includes('NoExisteEsteIcono'))!;
+    expect(aviso.match(/NoExisteEsteIcono/g)).toHaveLength(1);
+    // Y ningun conjunto del manifest trae repetidos.
+    for (const key of ['included', 'fromSource', 'fromCore', 'fromInclude'] as const) {
+      expect(manifest[key]).toEqual([...new Set(manifest[key])]);
+    }
+  });
+
   it('avisa y omite nombres de include que no existen en Lucide', async () => {
     const plugin = lucideSubset({ include: ['NoExisteEsteIcono', 'Rocket'] });
     const { ctx, warnings, emitted } = makeContext();

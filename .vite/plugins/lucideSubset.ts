@@ -20,9 +20,9 @@ import type { Plugin } from 'vite';
  *
  * The solution: intercept the `lucide-react` specifier ONLY when the importer
  * lives inside `@dynamic-framework/ui-react`, and serve it a module with the N
- * icons that are actually needed. The namespace object `ui-react` sees ends up
- * with N entries instead of thousands, and that `icons[name]` keeps working:
- * the library needs no changes.
+ * icons that are actually needed. `ui-react` then gets a namespace object with
+ * N entries instead of thousands, and that `icons[name]` keeps working: the
+ * library needs no changes.
  *
  * N is the union of three sets:
  *  1. Source scan: every string literal in `src/**` that matches a real Lucide
@@ -43,8 +43,8 @@ const LUCIDE_SPECIFIER = 'lucide-react';
 
 /**
  * Exports of Lucide's index that are not icons. They are always included in the
- * virtual module so the namespace `ui-react` sees loses nothing that is not an
- * icon. They weigh a few bytes.
+ * virtual module so that the namespace handed to `ui-react` keeps everything
+ * that is not an icon. They weigh a few bytes.
  *
  * The index's `icons` export is left out on purpose, and must not be confused
  * with the `const icons = LucideIcons` in `DIconBase`: the latter is the module
@@ -366,6 +366,13 @@ export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin 
 
       // 2. Dynamic's core.
       const core = loadCoreIcons(uiReactDir);
+      // Deduplicated before filtering: `include` is hand-written and
+      // dist/icons-core.json comes from the installed package, so neither is
+      // guaranteed to be duplicate-free. `included` is a Set already, so a
+      // repeat could never reach the virtual module, but it would show up
+      // twice in icons-manifest.json and in the warnings below -- and the
+      // manifest is the artifact the README tells you to read.
+      const coreNames = [...new Set(core.names)];
       if (core.source === 'fallback') {
         this.warn(
           `usando la lista de respaldo del nucleo (${core.names.length} iconos): `
@@ -374,8 +381,8 @@ export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin 
           + 'CORE_ICONS_FALLBACK en .vite/plugins/lucideSubset.ts o pasarlos por include.',
         );
       }
-      const fromCore = core.names.filter((name) => iconFileMap.has(name)).sort();
-      const missingCore = core.names.filter((name) => !iconFileMap.has(name));
+      const fromCore = coreNames.filter((name) => iconFileMap.has(name)).sort();
+      const missingCore = coreNames.filter((name) => !iconFileMap.has(name));
       if (missingCore.length > 0) {
         this.warn(
           `estos nombres del nucleo no existen en lucide-react@${paths.version} `
@@ -384,8 +391,9 @@ export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin 
       }
 
       // 3. Manually declared names.
-      const fromInclude = include.filter((name) => iconFileMap.has(name)).sort();
-      unknownIncluded = include.filter((name) => !iconFileMap.has(name));
+      const includeNames = [...new Set(include)];
+      const fromInclude = includeNames.filter((name) => iconFileMap.has(name)).sort();
+      unknownIncluded = includeNames.filter((name) => !iconFileMap.has(name));
       if (unknownIncluded.length > 0) {
         this.warn(
           `estos nombres de "include" no son exports de lucide-react@${paths.version} `
@@ -466,8 +474,8 @@ export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin 
 
       for (const name of manifest.included) addExport(name, iconFileMap.get(name)!);
 
-      // Index exports that are not icons, so the namespace ui-react sees has
-      // no holes.
+      // Index exports that are not icons, so the namespace handed to ui-react
+      // has no holes.
       for (const name of NON_ICON_EXPORTS) {
         const relativeFile = iconFileMap.get(name);
         if (!relativeFile) continue;
