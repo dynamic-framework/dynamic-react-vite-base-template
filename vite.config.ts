@@ -1,10 +1,10 @@
-/// <reference types="vitest" />
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import svgr from 'vite-plugin-svgr';
 import transformDynamicImports from '@dynamic-framework/vite-plugin-transform-dynamic-imports';
 import escapeLiquidInStrings from './.vite/plugins/escapeLiquidInStrings';
+import lucideSubset from './.vite/plugins/lucideSubset';
 
 export default defineConfig({
   plugins: [
@@ -12,6 +12,7 @@ export default defineConfig({
     react(),
     transformDynamicImports(),
     escapeLiquidInStrings(), // Necessary to avoid Liquid syntax errors when using Liquid in strings
+    lucideSubset(),
   ],
   resolve: {
     alias: {
@@ -31,20 +32,26 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 2000,
-    minify: 'esbuild',
-    outDir: 'build',
     assetsDir: '',
     rollupOptions: {
       output: {
         entryFileNames: 'main.js',
         chunkFileNames: '[name].[hash].chunk.js',
         assetFileNames: (assetInfo) => {
-          if (assetInfo.names.includes('.css')) {
-            return 'main.css'
+          if (assetInfo.names && assetInfo.names.includes('.css')) {
+            return '[name].css';
           }
-          return '[name].[ext]'
+          return '[name].[ext]';
         },
-        format: 'es'
+        format: 'es',
+        manualChunks(id) {
+          if (id.includes('@dynamic-framework/ui-react')) {
+            return 'dynamic-ui-react';
+          }
+          if (id.includes('/node_modules/') || id.includes('vite/preload-helper')) {
+            return 'vendor';
+          }
+        },
       }
     }
   },

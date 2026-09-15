@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 
 // Mock for window.matchMedia (required by some Dynamic UI components)
 Object.defineProperty(window, 'matchMedia', {
