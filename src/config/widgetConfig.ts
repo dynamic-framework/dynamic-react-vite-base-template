@@ -5,7 +5,17 @@ import type { ComponentProps } from 'react';
 
 import liquidParser from '../utils/liquidParser';
 
-export const SITE_LANG = liquidParser.parse('{{site.language}}');
+export const DEFAULT_LANGUAGE = 'es';
+
+export function resolveSiteLanguage(raw: string): string {
+  const language = raw.trim();
+  if (!language || (language.includes('{{') && language.includes('}}'))) {
+    return DEFAULT_LANGUAGE;
+  }
+  return language;
+}
+
+export const SITE_LANG = resolveSiteLanguage(liquidParser.parse('{{site.language}}'));
 export const SITE_NAME = liquidParser.parse('{{site.name}}');
 
 export const VARS_CURRENCY = {
