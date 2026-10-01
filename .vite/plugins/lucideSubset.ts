@@ -25,8 +25,8 @@ import type { Plugin } from 'vite';
  * library needs no changes.
  *
  * N is the union of three sets:
- *  1. Source scan: every string literal in `src/**` that matches a real Lucide
- *     export.
+ *  1. Source scan: every string literal in value position in `src/**` that
+ *     matches a real Lucide export.
  *  2. Core: the names Dynamic's own components resolve internally (`DAlert`,
  *     `DCollapse`, `DInputPassword`, ...).
  *  3. `include`: names the widget computes at runtime, which therefore never
@@ -111,7 +111,7 @@ export type LucideSubsetOptions = {
    * string literal in `src/**` (for instance, ones arriving from the Modyo API
    * or from a content JSON).
    *
-   * Rarely needed: the source scan collects EVERY literal in `src/**`, so
+   * Rarely needed: the source scan collects EVERY value literal in `src/**`, so
    * declaring the names in a constant in your own code is already enough. See
    * the README.
    */
@@ -133,7 +133,7 @@ export type LucideSubsetOptions = {
 };
 
 export type IconSourceScan = {
-  /** Every string literal found. */
+  /** Every string literal found in value position. */
   literals: Set<string>;
   /** Icon props holding a non-literal expression, for `strict` mode. */
   dynamicSites: Array<{ file: string; line: number; prop: string; text: string }>;
@@ -143,10 +143,15 @@ export type IconSourceScan = {
  * Collects the string literals of a TS/TSX file using the TypeScript parser,
  * and records the icon props whose value is not a literal.
  *
- * It collects EVERY literal, not only those in JSX attribute position:
- * wrappers like `MyLink` receive the name through a prop, so the literal lives
- * at the call site (`<MyLink icon="Book" />`) and sometimes inside an array or
- * a map of constants. Filtering by position would miss those cases.
+ * It collects every literal in value position, not only those in JSX attribute
+ * position: wrappers like `MyLink` receive the name through a prop, so the
+ * literal lives at the call site (`<MyLink icon="Book" />`) and sometimes
+ * inside an array or a map of constants.
+ *
+ * It skips literals that can never reach an icon at runtime: those in type
+ * position (`T['Filter']`, `Record<'Rocket', number>`, `'asc' | 'desc'`), the
+ * module specifier of an `import` or `export ... from`, and `enum` member
+ * initializers.
  *
  * False positives (a string that happens to match an icon name) are
  * acceptable: they cost one extra icon in the bundle.
@@ -166,8 +171,17 @@ export function scanSource(code: string, file: string): IconSourceScan {
     sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1
   );
 
+  const isOutsideValuePosition = (node: ts.StringLiteralLike) => {
+    const { parent } = node;
+    if (ts.isLiteralTypeNode(parent)) return true;
+    if ((ts.isImportDeclaration(parent) || ts.isExportDeclaration(parent))
+      && parent.moduleSpecifier === node) return true;
+    return ts.isEnumMember(parent) && parent.initializer === node;
+  };
+
   const visit = (node: ts.Node) => {
-    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+    if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
+      && !isOutsideValuePosition(node)) {
       literals.add(node.text);
     }
 

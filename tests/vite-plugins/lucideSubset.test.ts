@@ -130,6 +130,38 @@ describe('scanSource — catastro de literales', () => {
   });
 });
 
+describe('scanSource — posicion de los literales', () => {
+  it('descarta literales de tipo, especificadores de modulo e inicializadores de enum', () => {
+    const code = `
+      import type { SdkContentType } from 'x';
+      type F = SdkContentType['Filter'];
+      const a: Record<'Rocket', number> = { Rocket: 1 };
+      enum E { A = 'Anchor' }
+    `;
+    const { literals } = scanSource(code, 'T.ts');
+    for (const name of ['x', 'Filter', 'Rocket', 'Anchor']) {
+      expect(literals.has(name)).toBe(false);
+    }
+  });
+
+  it('descarta el especificador de un export ... from', () => {
+    const { literals } = scanSource("export { Foo } from 'Rocket';", 'X.ts');
+    expect(literals.has('Rocket')).toBe(false);
+  });
+
+  it('sigue recogiendo los literales en posicion de valor', () => {
+    const code = `
+      const ICONS = ['Rocket', 'Star'] as const;
+      const MAP = { car: 'Car' };
+      export const C = () => <MyLink icon="Book" />;
+    `;
+    const { literals } = scanSource(code, 'V.tsx');
+    for (const name of ['Rocket', 'Star', 'Car', 'Book']) {
+      expect(literals.has(name)).toBe(true);
+    }
+  });
+});
+
 describe('buildIconFileMap — mapeo nombre -> archivo', () => {
   const { indexFile } = resolveLucidePaths(ROOT, resolveUiReactDir(ROOT));
   const map = buildIconFileMap(fs.readFileSync(indexFile, 'utf8'), indexFile);
