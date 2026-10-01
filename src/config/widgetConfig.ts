@@ -30,7 +30,7 @@ export const CONTEXT_CONFIG = {
   currency: VARS_CURRENCY,
 } satisfies Partial<ComponentProps<typeof DContextProvider>>;
 
-// API Configuration
+// Configuración de la API
 export const API_BASE_URL = liquidParser.parse('{{vars.api-base-url}}');
 export const USE_MOCKS = liquidParser.parse('{{vars.use-mocks}}') === 'true';
 
