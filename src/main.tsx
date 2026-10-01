@@ -7,7 +7,7 @@ import './config/i18nConfig';
 import App from './App';
 import { resolveMountTargets } from './utils/mountTargets';
 
-// Comment or remove this line if your Modyo site has already loaded the Dynamic UI CSS, otherwise it will be loaded twice and may cause style issues.
+// Comenta o elimina esta línea si tu sitio de Modyo ya carga el CSS de Dynamic UI; de lo contrario se cargará dos veces y puede causar problemas de estilos.
 import '@dynamic-framework/ui-react/dist/css/dynamic-ui.css';
 import './styles/base.scss';
 
