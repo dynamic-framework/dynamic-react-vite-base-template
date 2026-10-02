@@ -61,6 +61,10 @@ npm run dev
 └── package.json
 ```
 
+## Punto de montaje
+
+El widget se monta en los elementos con el atributo `data-widget="widgetName"`, como el contenedor de `index.html`. Si no hay ninguno, se monta en el elemento con `id="widgetName"`, de modo que el `id` sigue funcionando. El nombre se define en la constante `WIDGET_NAME` de `src/main.tsx` y es lo que se cambia al crear un widget desde este template. Para montar varias instancias en una misma página, cada contenedor lleva el mismo `data-widget` y cada uno recibe su propia instancia.
+
 ## Configuración de Modyo
 
 Para hacer push a Modyo:
@@ -171,12 +175,13 @@ namespace y ese `icons[nombre]` sigue funcionando.
 
 Los iconos incluidos son la unión de:
 
-1. **Catastro del código**: todos los string literals de `src/**/*.{ts,tsx}` que
-   coincidan con un nombre real de icono de Lucide. Se recolectan con el parser
-   de TypeScript, y **no solo en posición de atributo JSX**: si pasas el nombre a
-   un envoltorio (`<MyLink icon="Book" />`), el literal se detecta en el sitio de
-   llamada. También los que están en arrays, en mapas de constantes o como
-   default de una prop.
+1. **Catastro del código**: los string literals en posición de valor de
+   `src/**/*.{ts,tsx}` que coincidan con un nombre real de icono de Lucide. Se
+   recolectan con el parser de TypeScript, y **no solo en posición de atributo
+   JSX**: si pasas el nombre a un envoltorio (`<MyLink icon="Book" />`), el
+   literal se detecta en el sitio de llamada. También los que están en arrays,
+   en mapas de constantes, en valores de `enum` o como default de una prop. Los
+   literales en posición de tipo y los especificadores de `import` no cuentan.
 2. **Núcleo de Dynamic**: los iconos que los propios componentes usan por dentro
    (la X de `DAlert`, los chevrons de `DCollapse`, el ojo de `DInputPassword`,
    etc.). No hay que declararlos: se incluyen siempre.
@@ -273,18 +278,19 @@ import { configureI18n } from '@dynamic-framework/ui-react';
 import en from '../locales/en.json';
 import es from '../locales/es.json';
 
-import { SITE_LANG } from './widgetConfig';
+import { DEFAULT_LANGUAGE, SITE_LANG } from './widgetConfig';
 
 const resources = {
   es: { translation: es },
   en: { translation: en },
 };
 
-configureI18n(resources, { lng: SITE_LANG });
+configureI18n(resources, { lng: SITE_LANG, fallbackLng: DEFAULT_LANGUAGE });
 ```
 
 - Las traducciones viven en `src/locales/*.json` (uno por idioma).
 - El idioma inicial se toma de `SITE_LANG` (resuelto vía Liquid desde `{{site.language}}`, ver sección anterior), de modo que el widget arranca en el idioma configurado en el sitio de Modyo.
+- El idioma por defecto es `es` y se cambia en `DEFAULT_LANGUAGE`, en `src/config/widgetConfig.ts`.
 - Para cambiar de idioma en runtime se expone `changeLanguage(lang)` desde el mismo archivo.
 - En componentes se usa el hook estándar de `react-i18next`:
   ```tsx
