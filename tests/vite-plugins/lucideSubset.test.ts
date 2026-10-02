@@ -130,6 +130,73 @@ describe('scanSource — catastro de literales', () => {
   });
 });
 
+describe('scanSource — posicion de los literales', () => {
+  it('descarta literales de tipo y especificadores de modulo', () => {
+    const code = `
+      import type { SdkContentType } from 'x';
+      type F = SdkContentType['Filter'];
+      const a: Record<'Rocket', number> = { Rocket: 1 };
+    `;
+    const { literals } = scanSource(code, 'T.ts');
+    for (const name of ['x', 'Filter', 'Rocket']) {
+      expect(literals.has(name)).toBe(false);
+    }
+  });
+
+  it('recoge los inicializadores de enum, que existen en tiempo de ejecucion', () => {
+    expect(scanSource("enum E { A = 'Anchor' }", 'V.ts').literals.has('Anchor')).toBe(true);
+    expect(scanSource("enum E { A = ('Anchor') }", 'V.ts').literals.has('Anchor')).toBe(true);
+
+    const code = `
+      enum Icons { Main = 'Rocket' }
+      export const C = () => <DIcon icon={Icons.Main} />;
+    `;
+    expect(scanSource(code, 'V.tsx').literals.has('Rocket')).toBe(true);
+  });
+
+  it('descarta el especificador de un export ... from', () => {
+    const { literals } = scanSource("export { Foo } from 'Rocket';", 'X.ts');
+    expect(literals.has('Rocket')).toBe(false);
+  });
+
+  it('descarta literales en cualquier contexto de tipo o de modulo', () => {
+    const cases = [
+      ["type T = { 'Rocket': string };", 'Rocket'],
+      ["interface I { 'Rocket': string }", 'Rocket'],
+      ["declare module 'Rocket' {}", 'Rocket'],
+      ["import x = require('Rocket');", 'Rocket'],
+      ["class B extends Base<'Star'> {}", 'Star'],
+    ];
+    for (const [code, name] of cases) {
+      expect(scanSource(code, 'T.ts').literals.has(name), code).toBe(false);
+    }
+  });
+
+  it('recoge los literales de valor junto a contextos de tipo', () => {
+    expect(scanSource("const m = import('Rocket');", 'V.ts').literals.has('Rocket')).toBe(true);
+    expect(scanSource("const o = { 'Rocket': 1 };", 'V.ts').literals.has('Rocket')).toBe(true);
+
+    const { literals } = scanSource("function f(a: 'Star' = 'Rocket') {}", 'V.ts');
+    expect(literals.has('Rocket')).toBe(true);
+    expect(literals.has('Star')).toBe(false);
+
+    // La cláusula extends de una clase se ejecuta en tiempo de ejecución aunque TypeScript la clasifique como nodo de tipo.
+    expect(scanSource("class A extends withIcon('Rocket') {}", 'V.ts').literals.has('Rocket')).toBe(true);
+  });
+
+  it('sigue recogiendo los literales en posicion de valor', () => {
+    const code = `
+      const ICONS = ['Rocket', 'Star'] as const;
+      const MAP = { car: 'Car' };
+      export const C = () => <MyLink icon="Book" />;
+    `;
+    const { literals } = scanSource(code, 'V.tsx');
+    for (const name of ['Rocket', 'Star', 'Car', 'Book']) {
+      expect(literals.has(name)).toBe(true);
+    }
+  });
+});
+
 describe('buildIconFileMap — mapeo nombre -> archivo', () => {
   const { indexFile } = resolveLucidePaths(ROOT, resolveUiReactDir(ROOT));
   const map = buildIconFileMap(fs.readFileSync(indexFile, 'utf8'), indexFile);
