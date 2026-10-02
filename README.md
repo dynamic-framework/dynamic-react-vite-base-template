@@ -278,18 +278,19 @@ import { configureI18n } from '@dynamic-framework/ui-react';
 import en from '../locales/en.json';
 import es from '../locales/es.json';
 
-import { SITE_LANG } from './widgetConfig';
+import { DEFAULT_LANGUAGE, SITE_LANG } from './widgetConfig';
 
 const resources = {
   es: { translation: es },
   en: { translation: en },
 };
 
-configureI18n(resources, { lng: SITE_LANG });
+configureI18n(resources, { lng: SITE_LANG, fallbackLng: DEFAULT_LANGUAGE });
 ```
 
 - Las traducciones viven en `src/locales/*.json` (uno por idioma).
 - El idioma inicial se toma de `SITE_LANG` (resuelto vía Liquid desde `{{site.language}}`, ver sección anterior), de modo que el widget arranca en el idioma configurado en el sitio de Modyo.
+- El idioma por defecto es `es` y se cambia en `DEFAULT_LANGUAGE`, en `src/config/widgetConfig.ts`.
 - Para cambiar de idioma en runtime se expone `changeLanguage(lang)` desde el mismo archivo.
 - En componentes se usa el hook estándar de `react-i18next`:
   ```tsx
