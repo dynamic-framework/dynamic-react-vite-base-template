@@ -61,6 +61,10 @@ npm run dev
 └── package.json
 ```
 
+## Punto de montaje
+
+El widget se monta en los elementos con el atributo `data-widget="widgetName"`, como el contenedor de `index.html`. Si no hay ninguno, se monta en el elemento con `id="widgetName"`, de modo que el `id` sigue funcionando. El nombre se define en la constante `WIDGET_NAME` de `src/main.tsx` y es lo que se cambia al crear un widget desde este template. Para montar varias instancias en una misma página, cada contenedor lleva el mismo `data-widget` y cada uno recibe su propia instancia.
+
 ## Configuración de Modyo
 
 Para hacer push a Modyo:
