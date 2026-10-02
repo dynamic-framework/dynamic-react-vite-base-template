@@ -131,17 +131,27 @@ describe('scanSource — catastro de literales', () => {
 });
 
 describe('scanSource — posicion de los literales', () => {
-  it('descarta literales de tipo, especificadores de modulo e inicializadores de enum', () => {
+  it('descarta literales de tipo y especificadores de modulo', () => {
     const code = `
       import type { SdkContentType } from 'x';
       type F = SdkContentType['Filter'];
       const a: Record<'Rocket', number> = { Rocket: 1 };
-      enum E { A = 'Anchor' }
     `;
     const { literals } = scanSource(code, 'T.ts');
-    for (const name of ['x', 'Filter', 'Rocket', 'Anchor']) {
+    for (const name of ['x', 'Filter', 'Rocket']) {
       expect(literals.has(name)).toBe(false);
     }
+  });
+
+  it('recoge los inicializadores de enum, que existen en tiempo de ejecucion', () => {
+    expect(scanSource("enum E { A = 'Anchor' }", 'V.ts').literals.has('Anchor')).toBe(true);
+    expect(scanSource("enum E { A = ('Anchor') }", 'V.ts').literals.has('Anchor')).toBe(true);
+
+    const code = `
+      enum Icons { Main = 'Rocket' }
+      export const C = () => <DIcon icon={Icons.Main} />;
+    `;
+    expect(scanSource(code, 'V.tsx').literals.has('Rocket')).toBe(true);
   });
 
   it('descarta el especificador de un export ... from', () => {
@@ -153,7 +163,6 @@ describe('scanSource — posicion de los literales', () => {
     const cases = [
       ["type T = { 'Rocket': string };", 'Rocket'],
       ["interface I { 'Rocket': string }", 'Rocket'],
-      ["enum E { A = ('Anchor') }", 'Anchor'],
       ["declare module 'Rocket' {}", 'Rocket'],
       ["import x = require('Rocket');", 'Rocket'],
       ["class B extends Base<'Star'> {}", 'Star'],

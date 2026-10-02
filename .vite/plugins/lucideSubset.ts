@@ -152,14 +152,15 @@ export type IconSourceScan = {
  * Omite los literales que nunca pueden llegar a un icono en tiempo de
  * ejecución. Para decidirlo sube por los ancestros del literal y lo descarta
  * cuando alguno es un nodo de tipo (`T['Filter']`, `Record<'Rocket', number>`,
- * `'asc' | 'desc'`, `type T = { 'Rocket': string }`) o una `interface`, cuando
- * el literal está dentro del inicializador de un miembro de `enum` (también
- * entre paréntesis), o cuando es el nombre de un `declare module`, el
- * especificador de módulo de un `import` o de un `export ... from`, o el
- * argumento de un `import x = require(...)`. El recorrido se detiene en la
- * primera sentencia o bloque. La excepción es la cláusula `extends` de una
- * clase (`class A extends withIcon('Rocket') {}`): TypeScript la clasifica como
- * nodo de tipo, pero se ejecuta en tiempo de ejecución y sus literales cuentan.
+ * `'asc' | 'desc'`, `type T = { 'Rocket': string }`) o una `interface`, o
+ * cuando es el nombre de un `declare module`, el especificador de módulo de un
+ * `import` o de un `export ... from`, o el argumento de un
+ * `import x = require(...)`. El recorrido se detiene en la primera sentencia o
+ * bloque. La excepción es la cláusula `extends` de una clase
+ * (`class A extends withIcon('Rocket') {}`): TypeScript la clasifica como nodo
+ * de tipo, pero se ejecuta en tiempo de ejecución y sus literales cuentan. Los
+ * inicializadores de `enum` también cuentan: un `enum` de strings genera un
+ * objeto en tiempo de ejecución.
  *
  * Los falsos positivos (un string que coincide por casualidad con un nombre de
  * icono) son aceptables: cuestan un icono de más en el bundle.
@@ -185,7 +186,6 @@ export function scanSource(code: string, file: string): IconSourceScan {
       if (ts.isTypeNode(current) && !ts.isExpressionWithTypeArguments(current)) return true;
       if (ts.isInterfaceDeclaration(current)) return true;
       if (ts.isExternalModuleReference(current)) return true;
-      if (ts.isEnumMember(current) && current.initializer === child) return true;
       if (ts.isModuleDeclaration(current) && current.name === child) return true;
       if ((ts.isImportDeclaration(current) || ts.isExportDeclaration(current))
         && current.moduleSpecifier === child) return true;

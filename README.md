@@ -176,8 +176,8 @@ Los iconos incluidos son la unión de:
    recolectan con el parser de TypeScript, y **no solo en posición de atributo
    JSX**: si pasas el nombre a un envoltorio (`<MyLink icon="Book" />`), el
    literal se detecta en el sitio de llamada. También los que están en arrays,
-   en mapas de constantes o como default de una prop. Los literales en posición
-   de tipo, los especificadores de `import` y los miembros de `enum` no cuentan.
+   en mapas de constantes, en valores de `enum` o como default de una prop. Los
+   literales en posición de tipo y los especificadores de `import` no cuentan.
 2. **Núcleo de Dynamic**: los iconos que los propios componentes usan por dentro
    (la X de `DAlert`, los chevrons de `DCollapse`, el ojo de `DInputPassword`,
    etc.). No hay que declararlos: se incluyen siempre.
