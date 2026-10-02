@@ -149,6 +149,32 @@ describe('scanSource — posicion de los literales', () => {
     expect(literals.has('Rocket')).toBe(false);
   });
 
+  it('descarta literales en cualquier contexto de tipo o de modulo', () => {
+    const cases = [
+      ["type T = { 'Rocket': string };", 'Rocket'],
+      ["interface I { 'Rocket': string }", 'Rocket'],
+      ["enum E { A = ('Anchor') }", 'Anchor'],
+      ["declare module 'Rocket' {}", 'Rocket'],
+      ["import x = require('Rocket');", 'Rocket'],
+      ["class B extends Base<'Star'> {}", 'Star'],
+    ];
+    for (const [code, name] of cases) {
+      expect(scanSource(code, 'T.ts').literals.has(name), code).toBe(false);
+    }
+  });
+
+  it('recoge los literales de valor junto a contextos de tipo', () => {
+    expect(scanSource("const m = import('Rocket');", 'V.ts').literals.has('Rocket')).toBe(true);
+    expect(scanSource("const o = { 'Rocket': 1 };", 'V.ts').literals.has('Rocket')).toBe(true);
+
+    const { literals } = scanSource("function f(a: 'Star' = 'Rocket') {}", 'V.ts');
+    expect(literals.has('Rocket')).toBe(true);
+    expect(literals.has('Star')).toBe(false);
+
+    // La cláusula extends de una clase se ejecuta en tiempo de ejecución aunque TypeScript la clasifique como nodo de tipo.
+    expect(scanSource("class A extends withIcon('Rocket') {}", 'V.ts').literals.has('Rocket')).toBe(true);
+  });
+
   it('sigue recogiendo los literales en posicion de valor', () => {
     const code = `
       const ICONS = ['Rocket', 'Star'] as const;
