@@ -36,8 +36,10 @@ jobs:
       - name: Validate PR commits
         run: npx commitlint --from ${{ github.event.pull_request.head.sha }}~${{ github.event.pull_request.commits }} --to ${{ github.event.pull_request.head.sha }} --verbose
 
-      - name: Test package
-        run: npm run test
-
+      # El build va antes que los tests a proposito: tests/build/ comprueba
+      # dist/main.js y en CI falla si no existe, en vez de omitirse en silencio.
       - name: Build package
         run: npm run build
+
+      - name: Test package
+        run: npm run test

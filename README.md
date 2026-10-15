@@ -124,7 +124,7 @@ npm run test -- --watch
 npm run test -- --coverage
 ```
 
-`tests/build/liquidDevConfigLeak.test.ts` comprueba el bundle de producción y se omite si no existe `dist/main.js`. Ejecuta `npm run build` antes para que corra.
+`tests/build/liquidDevConfigLeak.test.ts` comprueba el bundle de producción. En local se omite si no existe `dist/main.js` — ejecuta `npm run build` antes para que corra. En CI no se omite: un bundle ausente falla el job.
 
 ## Manejo de Liquid
 
@@ -160,11 +160,13 @@ Para evitar esto, el template incluye:
 
   No se resuelve con `await import('./liquid.json')` porque el formato de salida es `iife` y no admite top-level await, y porque la inicialización tiene que seguir siendo síncrona para que `widgetConfig.ts` resuelva sus constantes en tiempo de módulo.
 
-  El test `tests/build/liquidDevConfigLeak.test.ts` revisa el bundle ya generado y falla si encuentra algún valor de `liquid.json` en `dist/main.js`. Necesita un build previo; si no existe `dist/main.js` se omite:
+  El test `tests/build/liquidDevConfigLeak.test.ts` revisa el bundle ya generado y falla si encuentra algún valor de `liquid.json` en `dist/main.js`, si `liquidjs` viajó dentro, o si los tags no sobrevivieron intactos. Necesita un build previo:
 
   ```bash
   npm run build && npm run test
   ```
+
+  En local se omite si no existe `dist/main.js`, para no obligar a construir en cada `npm run test`. **En CI (`$CI`) un bundle ausente falla**: si solo se omitiera, quitar el plugin de `vite.config.ts` reintroduciría la fuga con el job en verde. Por eso en `.github/workflows/run-checks.yml` el paso `Build package` corre **antes** que `Test package`; si los reordenas, este chequeo deja de proteger nada y el propio test lo detecta.
 
 - **Plugin `escapeLiquidInStrings` (`.vite/plugins/escapeLiquidInStrings.ts`)**: se ejecuta solo en `build` y escapa los literales `"{{"` y `"}}"` que queden en el bundle final (por ejemplo, texto de UI que contenga esos caracteres sin ser Liquid intencional) convirtiéndolos a `\u007B\u007B` / `\u007D\u007D`. Esto es transparente para JS pero invisible para el parser de Liquid, evitando falsos positivos al momento del renderizado en Modyo.
 

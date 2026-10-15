@@ -56,13 +56,35 @@ export function stripLiquidTags(bundle: string) {
 const needles = collectNeedles(liquidDevConfig)
   .filter((needle, i, all) => all.findIndex((other) => other.text === needle.text) === i);
 
+/**
+ * Estos chequeos necesitan un build previo. En local se omiten si no lo hay,
+ * para no obligar a construir en cada `npm run test`.
+ *
+ * En CI no: ahí un bundle ausente tiene que fallar. Si solo se omitiera,
+ * bastaría con que alguien quitara el plugin de `vite.config.ts` —o con que el
+ * build dejara de correr antes que los tests— para reintroducir la fuga con el
+ * job en verde. Ver el paso `Build package` en .github/workflows/run-checks.yml,
+ * que corre antes que `Test package` precisamente por esto.
+ */
+const EN_CI = Boolean(process.env.CI);
+const HAY_BUNDLE = existsSync(BUNDLE);
+const OMITIR = !HAY_BUNDLE && !EN_CI;
+
 describe('liquid.json no debe llegar al bundle de producción', () => {
   it('encuentra al menos un valor detectable en liquid.json', () => {
     // Protege al propio test: sin needles pasaría en vacío.
     expect(needles.length).toBeGreaterThan(0);
   });
 
-  it.skipIf(!existsSync(BUNDLE))('dist/main.js no contiene ningún valor de liquid.json', () => {
+  it('en CI el bundle tiene que existir', () => {
+    expect(
+      HAY_BUNDLE || !EN_CI,
+      `No existe ${BUNDLE}. En CI este chequeo no puede omitirse: `
+      + '`npm run build` tiene que correr antes que `npm run test`.',
+    ).toBe(true);
+  });
+
+  it.skipIf(OMITIR)('dist/main.js no contiene ningún valor de liquid.json', () => {
     const bundle = stripLiquidTags(readFileSync(BUNDLE, 'utf8'));
     const filtrados = needles.filter((needle) => matches(bundle, needle)).map(({ text }) => text);
 
@@ -70,7 +92,7 @@ describe('liquid.json no debe llegar al bundle de producción', () => {
       .toEqual([]);
   });
 
-  it.skipIf(!existsSync(BUNDLE))('dist/main.js no incluye el motor de liquidjs', () => {
+  it.skipIf(OMITIR)('dist/main.js no incluye el motor de liquidjs', () => {
     // El motor solo sirve en local. Si viaja con la configuracion vaciada,
     // `strictVariables` convierte los tags en "undefined variable: ...".
     // `TokenizationError` es una clase propia de liquidjs y no del template.
@@ -80,7 +102,7 @@ describe('liquid.json no debe llegar al bundle de producción', () => {
     expect(presente, 'liquidjs viajo al bundle: el motor quedo encendido en build').toBe(false);
   });
 
-  it.skipIf(!existsSync(BUNDLE))('los tags siguen intactos para que los resuelva Modyo', () => {
+  it.skipIf(OMITIR)('los tags siguen intactos para que los resuelva Modyo', () => {
     const bundle = readFileSync(BUNDLE, 'utf8');
     expect(bundle.includes('{{site.name}}'), 'falta {{site.name}}').toBe(true);
     expect(bundle.includes('{{vars.api-base-url}}'), 'falta {{vars.api-base-url}}').toBe(true);
@@ -97,6 +119,6 @@ describe('liquid.json no debe llegar al bundle de producción', () => {
   });
 });
 
-if (!existsSync(BUNDLE)) {
+if (OMITIR) {
   console.warn('[liquidDevConfigLeak] no existe dist/main.js — ejecuta `npm run build` para que corra este chequeo.');
 }
