@@ -70,6 +70,26 @@ describe('liquid.json no debe llegar al bundle de producción', () => {
       .toEqual([]);
   });
 
+  it.skipIf(!existsSync(BUNDLE))('dist/main.js no incluye el motor de liquidjs', () => {
+    // El motor solo sirve en local. Si viaja con la configuracion vaciada,
+    // `strictVariables` convierte los tags en "undefined variable: ...".
+    // `TokenizationError` es una clase propia de liquidjs y no del template.
+    const presente = readFileSync(BUNDLE, 'utf8').includes('TokenizationError');
+    // Se afirma sobre un booleano y no sobre el bundle: un `toContain` aqui
+    // vuelca 1,5 MB de JS minificado al log cuando falla.
+    expect(presente, 'liquidjs viajo al bundle: el motor quedo encendido en build').toBe(false);
+  });
+
+  it.skipIf(!existsSync(BUNDLE))('los tags siguen intactos para que los resuelva Modyo', () => {
+    const bundle = readFileSync(BUNDLE, 'utf8');
+    expect(bundle.includes('{{site.name}}'), 'falta {{site.name}}').toBe(true);
+    expect(bundle.includes('{{vars.api-base-url}}'), 'falta {{vars.api-base-url}}').toBe(true);
+    expect(
+      bundle.includes('undefined variable'),
+      'el motor resolvio los tags contra una configuracion vacia',
+    ).toBe(false);
+  });
+
   it('detecta el objeto si alguien lo vuelve a inlinear', () => {
     // Control negativo: el mismo chequeo sobre un bundle con el leak dentro.
     const conLeak = stripLiquidTags(`var liquidConfig=${JSON.stringify(liquidDevConfig)};`);

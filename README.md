@@ -142,9 +142,23 @@ Para evitar esto, el template incluye:
 
   > **`liquid.json` es solo de desarrollo: nunca pongas ahí credenciales reales.** Ni tokens de sesión o `access_token`, ni API keys, ni URLs internas, ni identificadores de realm. Es un archivo versionado, lo ve cualquiera con acceso al repositorio, y hasta la v1.3.0 además se publicaba dentro del widget.
 
-- **Plugin `stripLiquidDevConfig` (`.vite/plugins/stripLiquidDevConfig.ts`)**: se ejecuta solo en `build` y sustituye `src/config/liquid.json` por `{}`, de modo que los valores de desarrollo no llegan a `dist/main.js`. En producción `liquidParser` se queda sin librería y sin motor, que es justo lo que se busca: los tags viajan sin resolver y los reemplaza Modyo en el servidor. Con `vite dev` y con el preview de Modyo CLI se siguen viendo los valores de `liquid.json`.
+- **Plugin `stripLiquidDevConfig` (`.vite/plugins/stripLiquidDevConfig.ts`)**: deja fuera del bundle todo el andamiaje de Liquid que solo sirve en local. En **cualquier** build hace dos cosas:
 
-  No se resuelve con `import.meta.env.DEV ? await import('./liquid.json') : {}` porque el formato de salida es `iife` y no admite top-level await, y porque la inicialización tiene que seguir siendo síncrona para que `widgetConfig.ts` resuelva sus constantes en tiempo de módulo.
+  1. Sustituye `src/config/liquid.json` por `{}`, de modo que los valores de desarrollo no llegan a `dist/main.js`.
+  2. Define `__LIQUID_DEV_ENGINE__` como `false`, lo que apaga el motor de `liquidjs` en `liquidConfig.ts` y lo deja fuera del bundle por tree-shaking.
+
+  Las dos cosas van juntas a propósito, y el test `el motor y la configuración se apagan juntos` lo fija. Vaciar la configuración dejando el motor encendido es **peor que no hacer nada**: con `strictVariables: true`, `{{site.language}}` no sobrevive intacto para que lo resuelva Modyo, sino que se convierte en el string `"undefined variable: site, line:1, col:3"`, y `API_BASE_URL` acaba apuntando a esa cadena.
+
+  El interruptor es `command === 'build'`, no el modo ni `import.meta.env.DEV`:
+
+  | | configuración | motor |
+  |---|---|---|
+  | `vite dev`, vitest, preview de Modyo CLI | valores de `liquid.json` | encendido |
+  | `vite build` (cualquier `--mode`, cualquier `NODE_ENV`) | `{}` | apagado |
+
+  `MODE !== 'production'` dejaría el motor encendido en modos propios como `vite build --mode staging`, e `import.meta.env.DEV` se deriva de `NODE_ENV`, así que `NODE_ENV=development vite build` también lo dejaría encendido. `command` solo distingue entre servir y construir, que es justo la pregunta.
+
+  No se resuelve con `await import('./liquid.json')` porque el formato de salida es `iife` y no admite top-level await, y porque la inicialización tiene que seguir siendo síncrona para que `widgetConfig.ts` resuelva sus constantes en tiempo de módulo.
 
   El test `tests/build/liquidDevConfigLeak.test.ts` revisa el bundle ya generado y falla si encuentra algún valor de `liquid.json` en `dist/main.js`. Necesita un build previo; si no existe `dist/main.js` se omite:
 
