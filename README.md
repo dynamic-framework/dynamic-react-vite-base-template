@@ -124,6 +124,8 @@ npm run test -- --watch
 npm run test -- --coverage
 ```
 
+`tests/build/liquidDevConfigLeak.test.ts` comprueba el bundle de producción y se omite si no existe `dist/main.js`. Ejecuta `npm run build` antes para que corra.
+
 ## Manejo de Liquid
 
 Modyo procesa el contenido de un widget como una plantilla Liquid antes de servirlo, por lo que cualquier `{{ }}` o `{% %}` que aparezca "suelto" en el bundle (por ejemplo dentro de un string JS, un JSON o una clase CSS) puede ser interpretado y removido/reemplazado por el motor de Liquid del sitio, rompiendo el widget en producción.
@@ -137,6 +139,18 @@ Para evitar esto, el template incluye:
   const siteName = liquidParser.parse('{{site.name}}');
   ```
   Los valores mock para desarrollo local se configuran en `src/config/liquid.json`.
+
+  > **`liquid.json` es solo de desarrollo: nunca pongas ahí credenciales reales.** Ni tokens de sesión o `access_token`, ni API keys, ni URLs internas, ni identificadores de realm. Es un archivo versionado, lo ve cualquiera con acceso al repositorio, y hasta la v1.3.0 además se publicaba dentro del widget.
+
+- **Plugin `stripLiquidDevConfig` (`.vite/plugins/stripLiquidDevConfig.ts`)**: se ejecuta solo en `build` y sustituye `src/config/liquid.json` por `{}`, de modo que los valores de desarrollo no llegan a `dist/main.js`. En producción `liquidParser` se queda sin librería y sin motor, que es justo lo que se busca: los tags viajan sin resolver y los reemplaza Modyo en el servidor. Con `vite dev` y con el preview de Modyo CLI se siguen viendo los valores de `liquid.json`.
+
+  No se resuelve con `import.meta.env.DEV ? await import('./liquid.json') : {}` porque el formato de salida es `iife` y no admite top-level await, y porque la inicialización tiene que seguir siendo síncrona para que `widgetConfig.ts` resuelva sus constantes en tiempo de módulo.
+
+  El test `tests/build/liquidDevConfigLeak.test.ts` revisa el bundle ya generado y falla si encuentra algún valor de `liquid.json` en `dist/main.js`. Necesita un build previo; si no existe `dist/main.js` se omite:
+
+  ```bash
+  npm run build && npm run test
+  ```
 
 - **Plugin `escapeLiquidInStrings` (`.vite/plugins/escapeLiquidInStrings.ts`)**: se ejecuta solo en `build` y escapa los literales `"{{"` y `"}}"` que queden en el bundle final (por ejemplo, texto de UI que contenga esos caracteres sin ser Liquid intencional) convirtiéndolos a `\u007B\u007B` / `\u007D\u007D`. Esto es transparente para JS pero invisible para el parser de Liquid, evitando falsos positivos al momento del renderizado en Modyo.
 

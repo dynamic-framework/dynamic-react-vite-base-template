@@ -5,12 +5,16 @@ import { defineConfig } from 'vite';
 import svgr from 'vite-plugin-svgr';
 import escapeLiquidInStrings from './.vite/plugins/escapeLiquidInStrings';
 import lucideSubset from './.vite/plugins/lucideSubset';
+import stripLiquidDevConfig from './.vite/plugins/stripLiquidDevConfig';
 
 export default defineConfig({
   plugins: [
     svgr(),
     react(),
     escapeLiquidInStrings(),
+    // Vacía src/config/liquid.json en el build: son valores de desarrollo y no
+    // deben publicarse con el widget. Ver el README.
+    stripLiquidDevConfig(),
     // Reduces lucide-react to the subset of icons this widget uses.
     // Build-only; under dev and the CLI preview the full Lucide is visible.
     // include: icon names the widget computes at runtime and that do not

@@ -12,6 +12,12 @@ import liquidConfig from './liquid.json';
 // fuera del bundle por tree-shaking (el paquete declara sideEffects: false).
 // La inicializacion sigue siendo sincrona, que es lo que necesita
 // widgetConfig.ts: sus constantes se resuelven en tiempo de modulo.
+//
+// `liquid.json` son valores de desarrollo y no deben publicarse con el widget:
+// el plugin `stripLiquidDevConfig` (.vite/plugins/) sustituye ese modulo por
+// `{}` en el build, asi que en produccion `liquidParser` se queda sin libreria
+// y sin motor, y los tags viajan sin resolver para que los reemplace Modyo.
+// No pongas credenciales reales ahi: ver el README.
 liquidParser.init(
   liquidConfig,
   import.meta.env.MODE !== 'production' ? { Liquid } : null,
