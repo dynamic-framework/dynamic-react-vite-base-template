@@ -185,13 +185,7 @@ Dos detalles que importan:
 
 ### Cómo se protege
 
-El plugin `assertNoFrameworkCss` (`.vite/plugins/assertNoFrameworkCss.ts`) **falla el build** si algún CSS emitido contiene `--bs-blue-rgb`, la primera declaración del CSS de Dynamic. Es un plugin y no un test para que corra en todo build, incluido el de `npm run push`.
-
-También falla si el build no emite ningún CSS con contenido: un guard que solo busca la ausencia de un token pasaría en vacío si el pipeline de SCSS se rompiera. Si tu widget de verdad no lleva estilos propios, pasa `requireCss: false`:
-
-```ts
-assertNoFrameworkCss({ requireCss: false }),
-```
+`tests/dynamicCssLink.test.ts` comprueba que `src/main.tsx` no importe `dynamic-ui.css` y que el `<link>` de `index.html` sea una URL absoluta (una ruta local la resolvería Vite y el CSS volvería al bundle).
 
 `cssCodeSplit: false` en `vite.config.ts` sigue siendo correcto: sirve para que los estilos **propios** del widget vayan en un solo archivo.
 

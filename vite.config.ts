@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
 import svgr from 'vite-plugin-svgr';
-import assertNoFrameworkCss from './.vite/plugins/assertNoFrameworkCss';
 import escapeLiquidInStrings from './.vite/plugins/escapeLiquidInStrings';
 import lucideSubset from './.vite/plugins/lucideSubset';
 
@@ -12,9 +11,6 @@ export default defineConfig({
     svgr(),
     react(),
     escapeLiquidInStrings(),
-    // Falla el build si el CSS de Dynamic acaba dentro de dist/main.css: el
-    // sitio de Modyo ya lo carga para toda la pagina. Ver el README.
-    assertNoFrameworkCss(),
     // Reduces lucide-react to the subset of icons this widget uses.
     // Build-only; under dev and the CLI preview the full Lucide is visible.
     // include: icon names the widget computes at runtime and that do not
