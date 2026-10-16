@@ -95,9 +95,12 @@ export function isTrustedDestination(trustedBaseUrl: string, requestUrl: string)
 /** Resolves a request's destination and tells whether it is the trusted API. */
 function targetsTrustedApi(
   trustedBaseUrl: string,
-  config: Pick<InternalAxiosRequestConfig, 'baseURL' | 'url'>,
+  config: Pick<InternalAxiosRequestConfig, 'baseURL' | 'url' | 'allowAbsoluteUrls'>,
 ): boolean {
-  return isTrustedDestination(trustedBaseUrl, resolveRequestUrl(config.baseURL, config.url));
+  const requestUrl = config.baseURL && config.allowAbsoluteUrls === false
+    ? `${withoutTrailingSlash(config.baseURL)}/${withoutLeadingSlashes(config.url ?? '')}`
+    : resolveRequestUrl(config.baseURL, config.url);
+  return isTrustedDestination(trustedBaseUrl, requestUrl);
 }
 
 /** Marker so a replayed request is never replayed again. */
