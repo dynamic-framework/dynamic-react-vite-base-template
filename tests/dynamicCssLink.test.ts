@@ -1,13 +1,13 @@
 /**
- * El `<link>` de desarrollo de index.html.
+ * The development `<link>` in index.html.
  *
- * Dos invariantes que, si se rompen, no fallan en ningun otro sitio:
+ * Two invariants that, if broken, fail nowhere else:
  *
- *  1. La URL tiene que ser **absoluta**. Es lo unico que la mantiene fuera del
- *     bundle: una ruta a node_modules la resuelve Vite y acaba dentro de
- *     dist/main.css (medido: 1 278 396 B en vez de 65).
- *  2. La version tiene que ir alineada con el paquete instalado. Es el precio
- *     de escribirla a mano, y es justo lo que este test paga.
+ *  1. The URL has to be **absolute**. That is the only thing keeping it out of
+ *     the bundle: Vite resolves a node_modules path and it ends up inside
+ *     dist/main.css (measured: 1,278,396 B instead of 65).
+ *  2. The version has to stay aligned with the installed package. That is the
+ *     price of writing it by hand, and what this test pays.
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -18,7 +18,7 @@ const ROOT = path.resolve(__dirname, '..');
 
 const indexHtml = readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 
-/** Solo los `<link>` activos: los de dentro de un comentario no cuentan. */
+/** Active `<link>`s only: the ones inside a comment do not count. */
 function activeLinks(html: string): string[] {
   return html
     .replace(/<!--[\s\S]*?-->/g, '')
@@ -33,45 +33,46 @@ function installedVersion(): string {
   return JSON.parse(readFileSync(pkg, 'utf8')).version as string;
 }
 
-describe('el <link> de Dynamic en index.html', () => {
-  it('existe y está activo', () => {
-    expect(dynamicLink, 'falta el <link> al CSS de Dynamic en index.html').toBeDefined();
+describe("Dynamic's <link> in index.html", () => {
+  it('exists and is active', () => {
+    expect(dynamicLink, "index.html is missing the <link> to Dynamic's CSS").toBeDefined();
   });
 
-  it('usa una URL absoluta, para quedar fuera del bundle', () => {
+  it('uses an absolute URL, so it stays out of the bundle', () => {
     const href = /href="([^"]+)"/.exec(dynamicLink ?? '')?.[1];
 
-    expect(href, 'el <link> no tiene href').toBeDefined();
+    expect(href, 'the <link> has no href').toBeDefined();
     expect(
       /^https:\/\//.test(href ?? ''),
-      `href debe ser una URL absoluta https:// — una ruta local la resuelve Vite `
-      + `y acaba dentro de dist/main.css. Encontrado: ${href}`,
+      'href must be an absolute https:// URL — Vite resolves a local path and it '
+      + `ends up inside dist/main.css. Found: ${href}`,
     ).toBe(true);
   });
 
-  it('apunta a la misma versión de @dynamic-framework/ui-react que está instalada', () => {
-    const enElLink = /\/assets\/([^/]+)\/ui-react\//.exec(dynamicLink ?? '')?.[1];
-    const instalada = installedVersion();
+  it('points at the same @dynamic-framework/ui-react version that is installed', () => {
+    const linkedVersion = /\/assets\/([^/]+)\/ui-react\//.exec(dynamicLink ?? '')?.[1];
+    const installed = installedVersion();
 
     expect(
-      enElLink,
-      'no se pudo leer la versión del href; ¿cambió el formato de la URL del CDN?',
+      linkedVersion,
+      "could not read the version from the href; did the CDN's URL format change?",
     ).toBeDefined();
     expect(
-      enElLink,
-      `index.html enlaza Dynamic ${enElLink} pero hay instalada la ${instalada}. `
-      + 'Actualiza el <link> de index.html o la dependencia.',
-    ).toBe(instalada);
+      linkedVersion,
+      `index.html links Dynamic ${linkedVersion} but ${installed} is installed. `
+      + "Update index.html's <link> or the dependency.",
+    ).toBe(installed);
   });
 });
 
-describe('el CSS del framework no se importa desde el código', () => {
-  it('main.tsx solo importa los estilos propios', () => {
+describe("the framework's CSS is not imported from the code", () => {
+  it('main.tsx imports the widget styles only', () => {
     const mainTsx = readFileSync(path.join(ROOT, 'src/main.tsx'), 'utf8');
 
-    // Es la regresion mas facil de cometer: volver a poner el import "porque en
-    // dev no se veia". El guard del build tambien lo caza, pero esto lo dice
-    // antes y senala el archivo.
+    // The easiest regression to commit: putting the import back "because it
+    // looked wrong in dev". Nothing else catches it — the site loads Dynamic's
+    // CSS for the whole page, so a widget that bundles its own copy still
+    // renders fine locally while shipping 1.2 MB and a duplicate :root.
     expect(mainTsx).not.toContain('dynamic-ui.css');
   });
 });

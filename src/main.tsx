@@ -7,10 +7,6 @@ import './config/i18nConfig';
 import App from './App';
 import { resolveMountTargets } from './utils/mountTargets';
 
-// Solo los estilos propios del widget. El CSS de Dynamic UI y el theme los
-// carga el sitio de Modyo una vez para toda la pagina: importarlos aqui metia
-// 1,2 MB en dist/main.css y redeclaraba :root, pisando los tokens del theme.
-// Para desarrollo local se enlazan desde index.html. Ver el README.
 import './styles/base.scss';
 
 const WIDGET_NAME = 'widgetName';
