@@ -7,8 +7,10 @@ import './config/i18nConfig';
 import App from './App';
 import { resolveMountTargets } from './utils/mountTargets';
 
-// Comenta o elimina esta línea si tu sitio de Modyo ya carga el CSS de Dynamic UI; de lo contrario se cargará dos veces y puede causar problemas de estilos.
-import '@dynamic-framework/ui-react/dist/css/dynamic-ui.css';
+// Solo los estilos propios del widget. El CSS de Dynamic UI y el theme los
+// carga el sitio de Modyo una vez para toda la pagina: importarlos aqui metia
+// 1,2 MB en dist/main.css y redeclaraba :root, pisando los tokens del theme.
+// Para desarrollo local se enlazan desde index.html. Ver el README.
 import './styles/base.scss';
 
 const WIDGET_NAME = 'widgetName';

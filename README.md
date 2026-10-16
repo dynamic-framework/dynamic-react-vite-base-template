@@ -152,6 +152,49 @@ Para evitar esto, el template incluye:
   Esto mantiene un solo punto de import de `liquidParser`, evita duplicar tags Liquid dispersos por el código y facilita ubicar/mockear todas las variables del sitio en un solo lugar. Solo importa `liquidParser` directamente si estás agregando una variable nueva a `widgetConfig.ts`.
 - Si tienes **texto estático** (traducciones, contenido) que por coincidencia contiene `{{` o `}}` y no quieres que Modyo lo interprete → el plugin ya lo resuelve automáticamente en build, no requiere acción extra. Si ves comportamientos raros con Liquid en producción que no ocurren en local, revisa primero si el string problemático pasa por alguno de estos dos mecanismos.
 
+## Estilos: qué lleva el widget y qué pone el sitio
+
+**El sitio de Modyo carga el CSS de Dynamic UI y el theme una vez para toda la página. El widget solo lleva sus estilos propios.**
+
+Por eso `src/main.tsx` importa únicamente `./styles/base.scss` y **no** `dynamic-ui.css`. Con el import activado, `dist/main.css` pesaba 1 278 396 B (65 582 B brotli); sin él, 65 B.
+
+No es solo peso:
+
+- Con N widgets en una página, se descargan N copias de más del mismo CSS.
+- Cada copia redeclara `:root` con los valores por defecto de Dynamic. Según el orden en que el sitio enlace `main.css` y el theme, **los tokens de tu marca quedan pisados**.
+- Un widget con una versión de Dynamic distinta a la del sitio mete dos `:root` incompatibles en la misma página.
+
+### Desarrollo local
+
+Para que `npm run dev` se vea bien, `index.html` enlaza el CSS de Dynamic desde el CDN:
+
+```html
+<link rel="stylesheet" href="https://cdn.dynamicframework.dev/assets/2.9.0/ui-react/css/dynamic-ui.min.css">
+```
+
+Modyo **nunca renderiza `index.html`**: compone la página con su propio template e inyecta `main.js` y `main.css`. Nada de lo que pongas ahí llega al widget publicado.
+
+Dos detalles que importan:
+
+- **La URL tiene que ser absoluta.** Una ruta a `node_modules` la resuelve Vite y el CSS acaba otra vez dentro de `dist/main.css` — el `<link>` parece inocente y el build engorda igual. Hay un test que lo comprueba.
+- **La versión va escrita a mano**, así que puede desalinearse de `package.json`. El test `tests/dynamicCssLink.test.ts` falla si no coinciden.
+
+`index.html` trae además, comentado, un `<link>` para **el theme de tu sitio**. Descoméntalo y apúntalo al tuyo (sale del `<head>` del sitio, el `<link>` a `/stylesheets/site-...css`): sin él ves los tokens por defecto de Dynamic, no los de tu marca, que es justo el problema que esta sección evita en producción.
+
+> `npm run preview` sirve el `dist` ya construido, así que ahí **no** verás el CSS de Dynamic. Es correcto: es exactamente lo que recibe Modyo. Para ver el widget con estilos usa `npm run dev` o el preview de Modyo CLI, que corre contra el sitio real.
+
+### Cómo se protege
+
+El plugin `assertNoFrameworkCss` (`.vite/plugins/assertNoFrameworkCss.ts`) **falla el build** si algún CSS emitido contiene `--bs-blue-rgb`, la primera declaración del CSS de Dynamic. Es un plugin y no un test para que corra en todo build, incluido el de `npm run push`.
+
+También falla si el build no emite ningún CSS con contenido: un guard que solo busca la ausencia de un token pasaría en vacío si el pipeline de SCSS se rompiera. Si tu widget de verdad no lleva estilos propios, pasa `requireCss: false`:
+
+```ts
+assertNoFrameworkCss({ requireCss: false }),
+```
+
+`cssCodeSplit: false` en `vite.config.ts` sigue siendo correcto: sirve para que los estilos **propios** del widget vayan en un solo archivo.
+
 ## Iconos y tamaño del bundle
 
 El template incluye un segundo plugin local de Vite, `lucideSubset`

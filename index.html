@@ -10,6 +10,28 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
 
+  <!--
+    SOLO PARA DESARROLLO LOCAL. Modyo nunca renderiza este archivo: compone la
+    pagina con su propio template e inyecta main.js y main.css. Nada de lo que
+    pongas aqui llega al widget publicado.
+
+    En el sitio real, el CSS de Dynamic y el theme los carga el sitio una vez
+    para toda la pagina. Aqui se replica eso para que `npm run dev` se vea bien.
+
+    La URL es absoluta a proposito: una ruta a node_modules la resolveria Vite y
+    acabaria dentro de dist/main.css, que es justo lo que se quiere evitar.
+    Mantén la version alineada con @dynamic-framework/ui-react de package.json;
+    hay un test que lo comprueba.
+  -->
+  <link rel="stylesheet" href="https://cdn.dynamicframework.dev/assets/2.9.0/ui-react/css/dynamic-ui.min.css">
+
+  <!--
+    TODO: apunta al theme de TU sitio para ver el widget como se vera de verdad.
+    Sin esto ves los tokens por defecto de Dynamic, no los de tu marca. La URL
+    sale del <head> del sitio (busca el <link> a /stylesheets/site-...css).
+  -->
+  <!-- <link rel="stylesheet" href="https://mi-sitio.modyo.cloud/app/stylesheets/site-....css"> -->
+
   <title>Modyo widget</title>
 </head>
 
