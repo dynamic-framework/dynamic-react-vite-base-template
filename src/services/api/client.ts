@@ -3,8 +3,12 @@
  *
  * Configuracion:
  * - Base URL desde variables de entorno (Liquid en produccion)
- * - Interceptores para auth headers si es necesario
  * - Timeout configurado
+ *
+ * Esta es la instancia base: los comportamientos se le enchufan como
+ * interceptores (`src/services/api/interceptors/`) en vez de crear un cliente
+ * por cada necesidad. Para mandar el token delegado de Modyo, llama una vez a
+ * `enableModyoAuth()` desde `setupModyoAuth.ts`; ver el README.
  */
 
 import axios from 'axios';

@@ -12,6 +12,7 @@
     "currency-separator": ".",
     "currency-decimal": ",",
     "dashboard-path": "#",
-    "other-var": "Some value"
+    "other-var": "Some value",
+    "customers-realm": "my-realm"
   }
 }

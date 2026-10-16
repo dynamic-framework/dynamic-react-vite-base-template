@@ -32,6 +32,13 @@ export const CONTEXT_CONFIG = {
 
 // Configuración de la API
 export const API_BASE_URL = liquidParser.parse('{{vars.api-base-url}}');
+
+/**
+ * Realm de customers donde vive el widget, para `/api/customers/realms/{realm}/me`.
+ * Nunca asumas `default`: es un alias de compatibilidad que apunta a otro realm.
+ * Solo lo necesitas si activas `enableModyoAuth()`.
+ */
+export const CUSTOMERS_REALM = liquidParser.parse('{{vars.customers-realm}}');
 export const USE_MOCKS = liquidParser.parse('{{vars.use-mocks}}') === 'true';
 
 export const widgetConfig = {

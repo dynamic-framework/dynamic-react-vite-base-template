@@ -12,6 +12,8 @@
     "src/modyo-preview-entry.ts",
     "src/_examples/MockTemplate.ts",
     "src/_examples/QueryHookTemplate.ts",
-    "src/_examples/RepositoryTemplate.ts"
+    "src/_examples/RepositoryTemplate.ts",
+    "src/_examples/ModyoAuthTemplate.ts",
+    "src/_examples/ProfileHookTemplate.ts"
   ]
 }
