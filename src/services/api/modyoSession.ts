@@ -95,10 +95,23 @@ export function buildProfileUrl(realm: string, portalBaseUrl = ''): string {
  * `revalidate_in` is already the remaining life, so under normal conditions it
  * wins. The absolute expiry comes in as a second bound: it changes nothing while
  * the two agree, and protects the computation if they ever drift apart.
+ *
+ * ## Everything is measured from `dataUpdatedAtMs`, never from "now"
+ *
+ * TanStack Query considers a query stale once
+ * `now > dataUpdatedAt + staleTime`, and it re-evaluates this callback on every
+ * staleness check. So the number returned here must be a lifetime measured
+ * **from the fetch**, not the life remaining at the moment of the check.
+ *
+ * `revalidate_in` and `access_token_expires_in` are already durations relative
+ * to the response, so they need no anchor. The absolute expiry does: computing
+ * it against `Date.now()` counts the cache's age twice. With a 300s token
+ * checked 150s in, the callback returned 140s and the query was already stale
+ * at `dataUpdatedAt + 140s` — a `/me` at half the token's life, every time.
  */
 export function computeSessionStaleTimeMs(
   token: DelegatedToken | undefined,
-  nowMs: number = Date.now(),
+  dataUpdatedAtMs: number,
 ): number {
   if (token === undefined) {
     return SESSION_MIN_STALE_TIME_MS;
@@ -115,7 +128,8 @@ export function computeSessionStaleTimeMs(
   }
   const expiresAtMs = Date.parse(token.access_token_expires_in_datetime ?? '');
   if (!Number.isNaN(expiresAtMs)) {
-    candidatesMs.push(expiresAtMs - nowMs - marginMs);
+    // Anchored to the fetch, not to `Date.now()`. See the docblock.
+    candidatesMs.push(expiresAtMs - dataUpdatedAtMs - marginMs);
   }
 
   if (candidatesMs.length === 0) {
@@ -126,7 +140,21 @@ export function computeSessionStaleTimeMs(
   return Math.max(Math.min(...candidatesMs), SESSION_MIN_STALE_TIME_MS);
 }
 
-export const sessionQueryKey = ['modyo', 'session'] as const;
+/**
+ * Cache key, scoped by endpoint.
+ *
+ * A module-level constant key would make two sessions collide whenever they
+ * share a `QueryClient` — the default one included. A widget wiring a second
+ * realm (or the same realm on another portal) would get the first session's
+ * profile and token back without ever calling its own `/me`, and invalidating
+ * one would drop the other's token too.
+ *
+ * `profileUrl` comes from {@link buildProfileUrl}, which already normalizes the
+ * portal base, so it is a canonical identity for "which `/me` is this".
+ */
+export function createSessionQueryKey(profileUrl: string) {
+  return ['modyo', 'session', profileUrl] as const;
+}
 
 export type FetchModyoProfile = (signal?: AbortSignal) => Promise<ModyoProfile>;
 
@@ -160,13 +188,19 @@ export function createFetchModyoProfile(
   };
 }
 
-export function createSessionQueryOptions(fetchProfile: FetchModyoProfile) {
+export function createSessionQueryOptions(
+  profileUrl: string,
+  fetchProfile: FetchModyoProfile,
+) {
   return queryOptions({
-    queryKey: sessionQueryKey,
+    queryKey: createSessionQueryKey(profileUrl),
     queryFn: ({ signal }) => fetchProfile(signal),
     // A session failure (401, no cookie) is not fixed by retrying.
     retry: false,
-    staleTime: (query) => computeSessionStaleTimeMs(query.state.data?.delegated_token),
+    staleTime: (query) => computeSessionStaleTimeMs(
+      query.state.data?.delegated_token,
+      query.state.dataUpdatedAt,
+    ),
     // Explicit, not inherited: any of these would turn the module into a
     // keepalive against the site's inactivity logout. See the module docblock.
     refetchOnWindowFocus: false,
@@ -205,7 +239,7 @@ export type ModyoSession = {
   /** Bearer for the API. Throws {@link SessionError} when there is none. */
   getAccessToken: () => Promise<string>;
   /**
-   * Drops the cached profile so the next {@link getAccessToken} refetches.
+   * Marks the cached profile stale so the next {@link getAccessToken} refetches.
    *
    * Pass the token that just failed: the cache is only dropped when it still
    * holds that same token. Without this guard, N concurrent requests failing
@@ -223,7 +257,10 @@ export function createModyoSession({
 }: ModyoSessionConfig): ModyoSession {
   const profileUrl = buildProfileUrl(realm, portalBaseUrl);
   const fetchProfile = createFetchModyoProfile(profileUrl, profileClient);
-  const options = createSessionQueryOptions(fetchProfile);
+  const options = createSessionQueryOptions(profileUrl, fetchProfile);
+  // The one key this session reads, writes and invalidates. Derived from
+  // `options` so the three can never drift apart.
+  const queryKey = options.queryKey;
 
   const getProfile = () => queryClient.fetchQuery(options);
 
@@ -240,17 +277,31 @@ export function createModyoSession({
 
   const invalidateAccessToken = (staleToken?: string): void => {
     if (staleToken !== undefined) {
-      const cached = queryClient.getQueryData<ModyoProfile>(sessionQueryKey);
+      const cached = queryClient.getQueryData<ModyoProfile>(queryKey);
       if (cached?.delegated_token?.access_token !== staleToken) {
         // Someone already replaced it; dropping it now would throw away a good
         // token and trigger another /me.
         return;
       }
     }
-    // `removeQueries`, not `invalidateQueries`: invalidating marks the query
-    // stale and makes active observers refetch in the background, which is the
-    // traffic this module must not generate.
-    queryClient.removeQueries({ queryKey: sessionQueryKey, exact: true });
+    // `invalidateQueries` with `refetchType: 'none'`, which is the only variant
+    // that gets both things right.
+    //
+    // Not `removeQueries`: removing destroys the query object, and an observer
+    // mounted through `queryOptions` (a `useProfile()` hook) stays attached to
+    // the destroyed one. The retry's `fetchQuery` then builds a *new* query, so
+    // the hook keeps rendering the old profile until something else forces it to
+    // rebind. Measured: the hook stayed on the pre-401 profile indefinitely.
+    //
+    // Not the default `refetchType: 'active'` either: that refetches active
+    // observers right away, which is the background `/me` this module must never
+    // generate (every re-mint resets the site's idle clock).
+    //
+    // `'none'` keeps the query and its observers, and only flags it invalidated.
+    // `fetchQuery` treats an invalidated query as stale (`isStaleByTime` returns
+    // early on `state.isInvalidated`), so the next token request still fetches,
+    // on demand.
+    queryClient.invalidateQueries({ queryKey, exact: true, refetchType: 'none' });
   };
 
   return {

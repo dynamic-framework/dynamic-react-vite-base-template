@@ -7,7 +7,8 @@ export { withAcceptLanguage, createAcceptLanguageInterceptor } from './acceptLan
 export {
   createAuthorizationRequestInterceptor,
   createUnauthorizedRetryInterceptor,
-  isOwnApiRequest,
+  isTrustedDestination,
+  resolveRequestUrl,
   withModyoAuthorization,
 } from './authorization';
 

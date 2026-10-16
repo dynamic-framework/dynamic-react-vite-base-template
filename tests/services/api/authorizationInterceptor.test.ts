@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   applyInterceptors,
-  isOwnApiRequest,
+  isTrustedDestination,
+  resolveRequestUrl,
   withAcceptLanguage,
   withModyoAuthorization,
 } from '../../../src/services/api/interceptors';
@@ -12,7 +13,12 @@ import {
   type ModyoSession,
 } from '../../../src/services/api/modyoSession';
 
-type RecordedRequest = { url?: string; authorization?: string; acceptLanguage?: string };
+type RecordedRequest = {
+  url?: string;
+  baseURL?: string;
+  authorization?: string;
+  acceptLanguage?: string;
+};
 
 /**
  * Axios instance whose adapter is a stub: records what each request carried and
@@ -27,6 +33,7 @@ function makeClient(statuses: number[]) {
     const headers = AxiosHeaders.from(config.headers);
     requests.push({
       url: config.url,
+      baseURL: config.baseURL,
       authorization: headers.get('Authorization') as string | undefined,
       acceptLanguage: headers.get('Accept-Language') as string | undefined,
     });
@@ -55,7 +62,7 @@ function makeSession() {
 
   const session: ModyoSession = {
     profileUrl: '/api/customers/realms/retail/me',
-    queryOptions: createSessionQueryOptions(async () => ({})),
+    queryOptions: createSessionQueryOptions('/api/customers/realms/retail/me', async () => ({})),
     getProfile: vi.fn(async () => ({ delegated_token: { access_token: current } })),
     getAccessToken: vi.fn(async () => current),
     invalidateAccessToken: vi.fn((staleToken?: string) => {
@@ -77,27 +84,59 @@ function wire(statuses: number[]): { client: AxiosInstance } & ReturnType<typeof
   return { client, requests, ...session };
 }
 
-describe('isOwnApiRequest', () => {
-  it('acepta solo rutas relativas al baseURL', () => {
-    expect(isOwnApiRequest('/entities')).toBe(true);
-    expect(isOwnApiRequest('entities')).toBe(true);
+describe('resolveRequestUrl', () => {
+  it('compone baseURL y url como hace axios', () => {
+    expect(resolveRequestUrl('/api', '/entities')).toBe('/api/entities');
+    expect(resolveRequestUrl('/api/', 'entities')).toBe('/api/entities');
+    expect(resolveRequestUrl('https://api.banco.com/v1', '/data')).toBe('https://api.banco.com/v1/data');
   });
 
-  it('rechaza URLs absolutas', () => {
-    expect(isOwnApiRequest('https://evil.com/x')).toBe(false);
-    expect(isOwnApiRequest('http://evil.com/x')).toBe(false);
+  it('una url absoluta ignora baseURL, igual que axios', () => {
+    expect(resolveRequestUrl('/api', 'https://tercero.com/x')).toBe('https://tercero.com/x');
+    expect(resolveRequestUrl('/api', '//tercero.com/x')).toBe('//tercero.com/x');
+  });
+
+  it('sin baseURL devuelve la url tal cual', () => {
+    expect(resolveRequestUrl(undefined, '/entities')).toBe('/entities');
+    expect(resolveRequestUrl('', '/entities')).toBe('/entities');
+  });
+});
+
+describe('isTrustedDestination', () => {
+  it('acepta lo que cae dentro de la base', () => {
+    expect(isTrustedDestination('/api', '/api/entities')).toBe(true);
+    expect(isTrustedDestination('/api', '/api')).toBe(true);
+    expect(isTrustedDestination('https://api.banco.com/v1', 'https://api.banco.com/v1/data')).toBe(true);
+  });
+
+  it('rechaza otro origen', () => {
+    expect(isTrustedDestination('/api', 'https://evil.com/api/x')).toBe(false);
+    expect(isTrustedDestination('https://api.banco.com/v1', 'https://evil.com/v1/x')).toBe(false);
   });
 
   it('rechaza URLs relativas al esquema, que axios trata como absolutas', () => {
-    // El bug que una deny list de /^https?:\/\// deja pasar: el Bearer viajaria
-    // a un host arbitrario.
-    expect(isOwnApiRequest('//evil.com/x')).toBe(false);
-    expect(isOwnApiRequest('ftp://host/x')).toBe(false);
+    // El bug que una deny list de /^https?:\/\// deja pasar.
+    expect(isTrustedDestination('/api', '//evil.com/x')).toBe(false);
   });
 
-  it('rechaza una url ausente', () => {
-    expect(isOwnApiRequest(undefined)).toBe(false);
-    expect(isOwnApiRequest('')).toBe(false);
+  it('compara por segmento: /api no confia en /apifoo', () => {
+    expect(isTrustedDestination('/api', '/apifoo/x')).toBe(false);
+    expect(isTrustedDestination('/api', '/api-publica/x')).toBe(false);
+  });
+
+  it('rechaza salir de la base por encima', () => {
+    expect(isTrustedDestination('/api', '/otra/cosa')).toBe(false);
+    expect(isTrustedDestination('https://api.banco.com/v1', 'https://api.banco.com/v2/x')).toBe(false);
+  });
+
+  it('rechaza un destino vacío o imposible de parsear', () => {
+    expect(isTrustedDestination('/api', '')).toBe(false);
+    expect(isTrustedDestination('/api', 'http://')).toBe(false);
+  });
+
+  it('con base vacía confía en cualquier ruta del propio origen', () => {
+    expect(isTrustedDestination('', '/entities')).toBe(true);
+    expect(isTrustedDestination('', 'https://evil.com/x')).toBe(false);
   });
 });
 
@@ -120,6 +159,50 @@ describe('withModyoAuthorization', () => {
     expect(requests[0].authorization).toBeUndefined();
     // Y no gasta un /me para una peticion que no lo necesita.
     expect(session.getAccessToken).not.toHaveBeenCalled();
+  });
+
+  describe('baseURL sobreescrito por petición', () => {
+    // El agujero reportado: `url` es perfectamente relativa, así que un guard
+    // que solo mirase `config.url` dejaba salir el token a cualquier host.
+
+    it('no manda el token si la petición redirige a otro host', async () => {
+      const { client, requests, session } = wire([200]);
+
+      await client.get('/data', { baseURL: 'https://third-party.example' });
+
+      expect(requests[0].baseURL).toBe('https://third-party.example');
+      expect(requests[0].authorization).toBeUndefined();
+      expect(session.getAccessToken).not.toHaveBeenCalled();
+    });
+
+    it('tampoco invalida la sesión ni reintenta ante un 401 de ese host', async () => {
+      const { client, requests, session } = wire([401, 200]);
+
+      await expect(client.get('/data', { baseURL: 'https://third-party.example' }))
+        .rejects.toMatchObject({ response: { status: 401 } });
+
+      expect(requests).toHaveLength(1);
+      expect(session.invalidateAccessToken).not.toHaveBeenCalled();
+    });
+
+    it('sigue funcionando si el override apunta dentro de la base confiable', async () => {
+      const { client, requests } = wire([200]);
+
+      await client.get('/data', { baseURL: '/api/v2' });
+
+      expect(requests[0].authorization).toBe('Bearer tok-1');
+    });
+
+    it('la base confiable se captura al registrar, no se relee de defaults', async () => {
+      const { client, requests, session } = wire([200]);
+
+      // Mover defaults.baseURL después de registrar no debe ampliar la confianza.
+      client.defaults.baseURL = 'https://third-party.example';
+      await client.get('/data');
+
+      expect(requests[0].authorization).toBeUndefined();
+      expect(session.getAccessToken).not.toHaveBeenCalled();
+    });
   });
 
   it('cancela la peticion si no hay token, en vez de mandarla sin credenciales', async () => {

@@ -190,12 +190,15 @@ En ambos casos, declara el realm en el sitio de Modyo como variable `customers-r
 
 `enableModyoAuth()` devuelve la sesión. Si además quieres mostrar datos del usuario, `src/_examples/ProfileHookTemplate.ts` es un `useProfile()` que se suscribe a la **misma** query que alimenta al interceptor, así que el nombre no cuesta un `/me` extra. Llama a `enableModyoAuth()` una sola vez: dos veces registra los interceptores dos veces.
 
+Si necesitas **dos sesiones** en el mismo widget (dos realms, o el mismo realm en otro portal), puedes crearlas con el mismo `QueryClient`: la clave de cache lleva el endpoint de `/me`, así que no se mezclan ni se invalidan entre sí.
+
 ### Qué resuelve
 
 - **Una sola llamada en vuelo.** El cache es TanStack Query, no un `Map` propio: `fetchQuery` devuelve el valor cacheado mientras está fresco y, si ya hay un `/me` en curso, se cuelga de ese en lugar de lanzar otro. Cuatro peticiones concurrentes pagan **un** `/me`.
 - **401 → invalida y reintenta una vez.** El replay vuelve a pasar por la cadena, así que recoge el token nuevo solo. Una vez, no "hasta que funcione": si el token fresco también es rechazado, el problema no es la caducidad y un bucle solo multiplica el daño.
+- **La invalidación respeta a los observadores.** Se usa `invalidateQueries({ refetchType: 'none' })`, que es la única variante que acierta en las dos cosas a la vez. `removeQueries` destruye el objeto query y un `useProfile()` montado se queda enganchado al destruido, pintando el perfil anterior al 401 para siempre. Y el `refetchType: 'active'` por defecto refetchea al instante, que es el `/me` de fondo que hay que evitar. Con `'none'` la query y sus observadores sobreviven, solo queda marcada como vencida, y la siguiente petición de token la vuelve a buscar bajo demanda. De regalo, el hook conserva el último perfil bueno durante la renovación en vez de parpadear a `undefined`.
 - **Sin estampida de `/me`.** El reintento informa qué token falló, y la sesión solo descarta el cacheado si sigue siendo ese. Sin ese detalle, N peticiones fallando a la vez tirarían cada una el token que la anterior acababa de renovar.
-- **El token no se filtra.** El `Bearer` solo se adjunta a URLs relativas al `baseURL` — una allow list, no una deny list: `//evil.com/x` es absoluta para axios, y un filtro de `/^https?:\/\//` la dejaría pasar con el token dentro.
+- **El token no se filtra.** El `Bearer` solo se adjunta cuando el **destino efectivo** cae dentro de la base confiable, capturada al registrar el interceptor. No basta con mirar `config.url`: axios acepta un `baseURL` por petición, así que `api.get('/data', { baseURL: 'https://third-party.example' })` tiene una `url` perfectamente relativa y colaría el token a cualquier host. El 401 usa el mismo chequeo, para que un 401 ajeno no invalide la sesión ni se reintente allí. Y es una allow list, no una deny list: `//evil.com/x` es absoluta para axios, y un filtro de `/^https?:\/\//` la dejaría pasar con el token dentro.
 - **Sin sesión, la petición no sale.** Si no hay token, el interceptor lanza y axios no emite la petición. Mandarla sin credenciales produciría un 401 del backend que esconde la causa real.
 
 ### Frescura: por qué el margen es pequeño
@@ -211,6 +214,8 @@ La ventana se calcula con los campos que trae el token, acotando por **todos** l
 | `access_token_expires_in_datetime` | Expiración absoluta, en el reloj del servidor. Segundo límite, por si los otros derivan. |
 
 Si `/me` no manda ninguno, se usa un TTL por defecto de 300s (la vida que Modyo emite hoy). Todos son opcionales en el tipo a propósito: es el payload de una plataforma que el widget no controla, y si uno faltara con el tipo declarándolo obligatorio, el cálculo daría `NaN` en silencio.
+
+Un detalle fácil de equivocar: TanStack Query considera la query vencida cuando `now > dataUpdatedAt + staleTime`, así que lo que devuelve el cálculo tiene que ser una **vida medida desde el fetch**, no la vida restante en el momento de la comprobación. `revalidate_in` y `access_token_expires_in` ya son duraciones relativas a la respuesta; la expiración absoluta se ancla a `dataUpdatedAt`. Calcularla contra `Date.now()` cuenta dos veces la edad del cache: un token de 300s quedaba vencido a los 140s y pagaba un `/me` a mitad de vida.
 
 ### No renueva el temporizador de inactividad
 
