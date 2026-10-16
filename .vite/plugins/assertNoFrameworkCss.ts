@@ -69,7 +69,9 @@ export function checkCssAssets(
   assets: Array<{ fileName: string; source: string }>,
   { marker = FRAMEWORK_CSS_MARKER, requireCss = true }: AssertNoFrameworkCssOptions = {},
 ): string | undefined {
-  const conMarcador = assets.filter((asset) => asset.source.includes(marker));
+  const escapedMarker = marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const declaration = new RegExp(`(?:^|[;{])\\s*${escapedMarker}\\s*:`);
+  const conMarcador = assets.filter((asset) => declaration.test(asset.source));
 
   if (conMarcador.length > 0) {
     const nombres = conMarcador.map((asset) => asset.fileName).join(', ');
