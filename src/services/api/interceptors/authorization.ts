@@ -77,8 +77,9 @@ export function isTrustedDestination(trustedBaseUrl: string, requestUrl: string)
   let target: URL;
   let trusted: URL;
   try {
-    target = new URL(requestUrl, INTERNAL_ORIGIN);
-    trusted = new URL(trustedBaseUrl || '/', INTERNAL_ORIGIN);
+    const resolutionBase = typeof document === 'undefined' ? INTERNAL_ORIGIN : document.baseURI;
+    target = new URL(requestUrl, resolutionBase);
+    trusted = new URL(trustedBaseUrl || '/', resolutionBase);
   } catch {
     // An unparseable destination is not a trusted one.
     return false;
