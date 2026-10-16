@@ -38,7 +38,7 @@ export function useProfile() {
      * caso a manejar, no un bug. Con esto, las llamadas al backend fallarán.
      */
     missingDelegatedToken: query.data !== undefined
-      && query.data.delegated_token?.access_token === undefined,
+      && !query.data.delegated_token?.access_token,
   };
 }
 
