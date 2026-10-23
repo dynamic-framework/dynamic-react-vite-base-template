@@ -68,11 +68,6 @@ describe("Dynamic's <link> in index.html", () => {
 describe("the framework's CSS is not imported from the code", () => {
   it('main.tsx imports the widget styles only', () => {
     const mainTsx = readFileSync(path.join(ROOT, 'src/main.tsx'), 'utf8');
-
-    // The easiest regression to commit: putting the import back "because it
-    // looked wrong in dev". Nothing else catches it — the site loads Dynamic's
-    // CSS for the whole page, so a widget that bundles its own copy still
-    // renders fine locally while shipping 1.2 MB and a duplicate :root.
     expect(mainTsx).not.toContain('dynamic-ui.css');
   });
 });
