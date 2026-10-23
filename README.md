@@ -51,6 +51,8 @@ npm run dev
 ├── public/              # Assets estáticos
 ├── src/
 │   ├── components/      # Componentes React
+│   ├── services/
+│   │   └── api/         # Cliente axios + interceptores enchufables
 │   ├── styles/          # Estilos SCSS
 │   ├── App.tsx          # Componente principal
 │   └── main.tsx         # Entry point
@@ -151,6 +153,98 @@ Para evitar esto, el template incluye:
   ```
   Esto mantiene un solo punto de import de `liquidParser`, evita duplicar tags Liquid dispersos por el código y facilita ubicar/mockear todas las variables del sitio en un solo lugar. Solo importa `liquidParser` directamente si estás agregando una variable nueva a `widgetConfig.ts`.
 - Si tienes **texto estático** (traducciones, contenido) que por coincidencia contiene `{{` o `}}` y no quieres que Modyo lo interprete → el plugin ya lo resuelve automáticamente en build, no requiere acción extra. Si ves comportamientos raros con Liquid en producción que no ocurren en local, revisa primero si el string problemático pasa por alguno de estos dos mecanismos.
+
+## Sesión de Modyo y token delegado
+
+Para llamar a la API del cliente, el widget necesita el token delegado del usuario: se pide a Modyo con `GET /api/customers/realms/{realm}/me` y se manda al backend como `Authorization: Bearer`.
+
+El patrón habitual es resolverlo en un interceptor sin memoria, que pide `/me` en cada petición saliente. Un dashboard acaba pagando cuatro o cinco `/me` en serie al montar para cuatro llamadas útiles. Este template trae el módulo ya resuelto.
+
+### Activarlo
+
+Es **opcional**: nada lo importa, así que el template sigue funcionando con mocks tal cual.
+
+La vía rápida es copiar el scaffold ya cocinado:
+
+```bash
+cp src/_examples/ModyoAuthTemplate.ts src/services/api/modyoAuth.ts
+```
+
+y añadir una línea en `src/main.tsx`, **antes** de montar (los interceptores tienen que estar puestos antes de la primera petición):
+
+```ts
+import './services/api/modyoAuth';
+```
+
+Si prefieres cablearlo a mano, son dos líneas donde quieras:
+
+```ts
+import { enableModyoAuth } from './services/api/setupModyoAuth';
+
+enableModyoAuth();
+```
+
+En ambos casos, declara el realm en el sitio de Modyo como variable `customers-realm` (en local, en `src/config/liquid.json`). **Nunca asumas `default`**: `/api/profile` es un alias de compatibilidad con `realm_uid: 'default'` hardcodeado, así que un widget de otro realm leería el realm equivocado sin avisar.
+
+**Tus repositorios no cambian**: siguen usando `api` de `src/services/api/client.ts` y a partir de ese momento salen autenticados.
+
+`enableModyoAuth()` devuelve la sesión. Si además quieres mostrar datos del usuario, `src/_examples/ProfileHookTemplate.ts` es un `useProfile()` que se suscribe a la **misma** query que alimenta al interceptor, así que el nombre no cuesta un `/me` extra. Llama a `enableModyoAuth()` una sola vez: dos veces registra los interceptores dos veces.
+
+Si necesitas **dos sesiones** en el mismo widget (dos realms, o el mismo realm en otro portal), puedes crearlas con el mismo `QueryClient`: la clave de cache lleva el endpoint de `/me`, así que no se mezclan ni se invalidan entre sí.
+
+### Qué resuelve
+
+- **Una sola llamada en vuelo.** El cache es TanStack Query, no un `Map` propio: `fetchQuery` devuelve el valor cacheado mientras está fresco y, si ya hay un `/me` en curso, se cuelga de ese en lugar de lanzar otro. Cuatro peticiones concurrentes pagan **un** `/me`.
+- **401 → invalida y reintenta una vez.** El replay vuelve a pasar por la cadena, así que recoge el token nuevo solo. Una vez, no "hasta que funcione": si el token fresco también es rechazado, el problema no es la caducidad y un bucle solo multiplica el daño.
+- **La invalidación respeta a los observadores.** Se usa `invalidateQueries({ refetchType: 'none' })`, que es la única variante que acierta en las dos cosas a la vez. `removeQueries` destruye el objeto query y un `useProfile()` montado se queda enganchado al destruido, pintando el perfil anterior al 401 para siempre. Y el `refetchType: 'active'` por defecto refetchea al instante, que es el `/me` de fondo que hay que evitar. Con `'none'` la query y sus observadores sobreviven, solo queda marcada como vencida, y la siguiente petición de token la vuelve a buscar bajo demanda. De regalo, el hook conserva el último perfil bueno durante la renovación en vez de parpadear a `undefined`.
+- **Sin estampida de `/me`.** El reintento informa qué token falló, y la sesión solo descarta el cacheado si sigue siendo ese. Sin ese detalle, N peticiones fallando a la vez tirarían cada una el token que la anterior acababa de renovar.
+- **El token no se filtra.** El `Bearer` solo se adjunta cuando el **destino efectivo** cae dentro de la base confiable, capturada al registrar el interceptor. No basta con mirar `config.url`: axios acepta un `baseURL` por petición, así que `api.get('/data', { baseURL: 'https://third-party.example' })` tiene una `url` perfectamente relativa y colaría el token a cualquier host. El 401 usa el mismo chequeo, para que un 401 ajeno no invalide la sesión ni se reintente allí. Y es una allow list, no una deny list: `//evil.com/x` es absoluta para axios, y un filtro de `/^https?:\/\//` la dejaría pasar con el token dentro.
+- **Sin sesión, la petición no sale.** Si no hay token, el interceptor lanza y axios no emite la petición. Mandarla sin credenciales produciría un 401 del backend que esconde la causa real.
+
+### Frescura: por qué el margen es pequeño
+
+Modyo **solo re-acuña el token cuando ya expiró**: mientras está vivo, `/me` devuelve el mismo con menos vida. Así que refrescar antes no gana nada, y un margen generoso es activamente dañino — hace que cada petición dentro del margen pague un `/me` que no cambia nada. De ahí 10 segundos de margen y un piso absoluto de 5, en vez del minuto o dos que parecerían prudentes.
+
+La ventana se calcula con los campos que trae el token, acotando por **todos** los disponibles:
+
+| Campo | Qué es |
+|---|---|
+| `revalidate_in` | Segundos hasta tener que volver a pedir `/me`. Modyo lo recalcula en cada respuesta como `expiry - skew - now`, así que ya es la vida **restante**. Es el que manda. |
+| `access_token_expires_in` | Vida total del token en segundos. |
+| `access_token_expires_in_datetime` | Expiración absoluta, en el reloj del servidor. Segundo límite, por si los otros derivan. |
+
+Si `/me` no manda ninguno, se usa un TTL por defecto de 300s (la vida que Modyo emite hoy). Todos son opcionales en el tipo a propósito: es el payload de una plataforma que el widget no controla, y si uno faltara con el tipo declarándolo obligatorio, el cálculo daría `NaN` en silencio.
+
+Un detalle fácil de equivocar: TanStack Query considera la query vencida cuando `now > dataUpdatedAt + staleTime`, así que lo que devuelve el cálculo tiene que ser una **vida medida desde el fetch**, no la vida restante en el momento de la comprobación. `revalidate_in` y `access_token_expires_in` ya son duraciones relativas a la respuesta; la expiración absoluta se ancla a `dataUpdatedAt`. Calcularla contra `Date.now()` cuenta dos veces la edad del cache: un token de 300s quedaba vencido a los 140s y pagaba un `/me` a mitad de vida.
+
+### No renueva el temporizador de inactividad
+
+Cada `/me` que re-acuña el token gasta el refresh grant de Keycloak, y eso resetea el reloj de *SSO Session Idle*. Un módulo que pidiera `/me` por temporizador, al enfocar la ventana o al reconectar sería por tanto un **keepalive**: mantendría viva una sesión en una pantalla desatendida y anularía el cierre por inactividad del sitio.
+
+Por eso solo se pide `/me` cuando una petición saliente necesita token y el cacheado está vencido. Los flags de refetch están apagados **explícitamente** en las opciones de la query, no heredados de los defaults del `QueryClient`.
+
+### Interceptores enchufables
+
+El cliente de `src/services/api/client.ts` es la instancia base; los comportamientos se le enchufan en vez de crear un cliente por necesidad:
+
+```ts
+applyInterceptors(api, [
+  withAcceptLanguage(),
+  withModyoAuthorization(session),
+]);
+```
+
+Un interceptor es `(client: AxiosInstance) => void`, así que añadir cifrado de payload u otra cabecera es una entrada más en ese array. `withAcceptLanguage` viene incluido y manda `{{site.language}}` en cada petición.
+
+El cliente de `/me` es deliberadamente **otro**: autentica por cookie (`withCredentials`), mientras que el de la API manda el Bearer que este módulo se encarga de conseguir. Compartirlos sería circular.
+
+### Tests
+
+`tests/services/api/` cubre los tres casos del reporte y algunos más: concurrencia (4 peticiones → 1 `/me`), expiración, 401 con reintento único, no-estampida, y que el token no viaje a hosts externos.
+
+```bash
+npm run test -- tests/services/api
+```
 
 ## Iconos y tamaño del bundle
 

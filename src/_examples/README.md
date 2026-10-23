@@ -15,6 +15,18 @@ adapt them to your widget's domain.
 | `RepositoryTemplate.ts`     | `src/services/repositories/<EntityName>Repository.ts` | `getEntities` → `get<Entity>` |
 | `QueryHookTemplate.ts`      | `src/hooks/use<EntityName>.ts`             | `useEntities` → `use<Entity>` |
 | `EntityListScreen.tsx`      | `src/screens/<EntityName>ListScreen.tsx`   | (Composes the above) |
+| `ModyoAuthTemplate.ts`      | `src/services/api/modyoAuth.ts`            | (One-time setup, not per entity) |
+| `ProfileHookTemplate.ts`    | `src/hooks/useProfile.ts`                  | (Requires `modyoAuth.ts` above) |
+
+## Modyo delegated token
+
+`ModyoAuthTemplate.ts` and `ProfileHookTemplate.ts` are the cooked wiring for the
+delegated token flow (`Authorization: Bearer` against the client's API). Unlike
+the entity scaffolds, these are **one-time setup**: copy them once, not once per
+entity. The reusable parts they build on — the session, the cache and the
+interceptors — are real compiled and tested code under `src/services/api/`; only
+the wiring lives here. See the main README, section "Sesión de Modyo y token
+delegado".
 
 ## Why this exists
 
