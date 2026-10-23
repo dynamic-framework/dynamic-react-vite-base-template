@@ -4,15 +4,32 @@ import liquidParser from '../utils/liquidParser';
 
 import liquidConfig from './liquid.json';
 
-// El motor de Liquid solo se usa fuera de produccion. Se importa de forma
-// estatica en vez de con `await import('liquidjs')` porque el formato de salida
-// IIFE no admite top-level await ('Module format "iife" does not support
-// top-level await'). En el build de produccion `import.meta.env.MODE` se
-// reemplaza por "production", la condicion se pliega a false y liquidjs queda
-// fuera del bundle por tree-shaking (el paquete declara sideEffects: false).
-// La inicializacion sigue siendo sincrona, que es lo que necesita
-// widgetConfig.ts: sus constantes se resuelven en tiempo de modulo.
-liquidParser.init(
-  liquidConfig,
-  import.meta.env.MODE !== 'production' ? { Liquid } : null,
-);
+// `liquid.json` holds development-only fixtures for the liquid placeholders
+// (`{{site.*}}`, `{{vars.*}}`, `{{user.*}}`) and must never ship with the
+// widget: anything put there to test locally — an internal URL, a realm, a
+// session token — would be published inside the bundle.
+//
+// Not initializing the parser is what keeps both the fixtures and the engine
+// out. Uninitialized, `liquidParser` keeps `library = {}` and
+// `engine = undefined`, so its `parse()` returns the tag untouched — which is
+// exactly what has to travel, for Modyo to resolve it server-side.
+//
+// `liquidConfig` and `Liquid` are referenced only inside this block, so in a
+// build the condition folds to false and tree-shaking drops both: the JSON and
+// liquidjs, which declares `sideEffects: false`.
+//
+// liquidjs is imported statically rather than with `await import('liquidjs')`
+// because the output format is `iife`, which rejects top-level await outright
+// ('Module format "iife" does not support top-level await'). The initialization
+// also has to stay synchronous: `widgetConfig.ts` resolves its constants at
+// module evaluation time.
+//
+// Caveat: `import.meta.env.DEV` means "NODE_ENV is not production", not "this is
+// a build". `NODE_ENV=development vite build` therefore leaves this block in and
+// publishes `liquid.json`. Every `--mode` is covered (DEV is false for all of
+// them); only an inherited NODE_ENV is not.
+//
+// Never put real credentials in `liquid.json`.
+if (import.meta.env.DEV) {
+  liquidParser.init(liquidConfig, { Liquid });
+}
