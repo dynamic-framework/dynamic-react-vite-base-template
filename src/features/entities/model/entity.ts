@@ -1,15 +1,7 @@
 /**
- * Tipos de dominio de la feature entities.
- *
- * Convenciones:
- * - Entity: Tipo de dominio (usado en componentes)
- * - CreateEntityData: Payload para crear
- * - UpdateEntityData: Payload para actualizar (campos opcionales)
+ * Tipos de dominio de la feature: los que usan hooks/ y ui/. La forma de la
+ * API vive en api/entity.dto.ts y se traduce con entity.mapper.ts.
  */
-
-// ============================================
-// DOMAIN TYPES
-// ============================================
 
 export interface Entity {
   id: string;
@@ -18,25 +10,12 @@ export interface Entity {
   updatedAt?: string;
 }
 
-// ============================================
-// PAYLOAD TYPES
-// ============================================
-
+/** Datos para crear una entidad. */
 export interface CreateEntityData {
   name: string;
 }
 
-export interface UpdateEntityData {
-  name?: string;
-}
-
-// ============================================
-// FILTER TYPES
-// ============================================
-
+/** Filtros de la lista; forman parte de la llave de la query. */
 export interface EntityFilters {
-  status?: string;
   search?: string;
-  page?: number;
-  limit?: number;
 }
