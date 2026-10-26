@@ -156,38 +156,92 @@ Para evitar esto, el template incluye:
 
 **El sitio de Modyo carga el CSS de Dynamic UI y el theme una vez para toda la página. El widget solo lleva sus estilos propios.**
 
-Por eso `src/main.tsx` importa únicamente `./styles/base.scss` y **no** `dynamic-ui.css`. Con el import activado, `dist/main.css` pesaba 1 278 396 B (65 582 B brotli); sin él, 65 B.
+Por eso `src/main.tsx` importa únicamente `./styles/base.scss` y **no** `dynamic-ui.css`. Si el widget incluyera el CSS de Dynamic:
 
-No es solo peso:
+- Con N widgets en una página, se descargarían N copias de más del mismo CSS.
+- Cada copia redeclararía `:root` con los valores por defecto de Dynamic. Según el orden en que el sitio enlace `main.css` y el theme, **los tokens de tu marca quedarían pisados**.
+- Un widget con una versión de Dynamic distinta a la del sitio metería dos `:root` incompatibles en la misma página.
 
-- Con N widgets en una página, se descargan N copias de más del mismo CSS.
-- Cada copia redeclara `:root` con los valores por defecto de Dynamic. Según el orden en que el sitio enlace `main.css` y el theme, **los tokens de tu marca quedan pisados**.
-- Un widget con una versión de Dynamic distinta a la del sitio mete dos `:root` incompatibles en la misma página.
+`cssCodeSplit: false` en `vite.config.ts` hace que los estilos **propios** del widget vayan en un solo archivo, `dist/main.css`.
+
+### Qué no define el widget
+
+Colores, tipografía, radios y zonas de theme vienen de Dynamic y del theme del sitio. En `src/` no se permiten:
+
+- colores hex o con nombre;
+- `font`, `font-family` ni `border-radius` (tampoco los radios por esquina);
+- variables SCSS (`$x`) ni `@import`;
+- el CSS de Dynamic, ni compilado (`dynamic-ui.css`) ni desde sus fuentes (`@dynamic-framework/ui-react/src/style/...`);
+- bloques `[data-bs-theme=...]`: el widget solo pone el atributo en el JSX.
+
+Las clases propias siguen el patrón `.widget-name__bloque--variante`. Al crear tu widget, renombra `widget-name` en `index.html`, `src/styles/base.scss` y `selector-class-pattern` de `.stylelintrc`.
+
+Correcto:
+
+```scss
+@use "@dynamic-framework/ui-react/src/style/abstracts/+import" as df;
+
+.widget-name__summary {
+  color: var(--bs-body-color);
+  background-color: rgba(var(--bs-primary-rgb), .1);
+
+  @include df.media-breakpoint-up(md) {
+    padding: var(--bs-ref-spacer-4);
+  }
+}
+```
+
+```tsx
+<div className="widget-name__summary rounded-2 fs-5" data-bs-theme="dark">
+```
+
+Incorrecto:
+
+```scss
+$brand: #336699;
+
+.summary {
+  font-family: Arial, sans-serif;
+  color: $brand;
+  border-radius: 8px;
+}
+
+[data-bs-theme="dark"] .summary {
+  color: white;
+}
+```
+
+```tsx
+<div style={{ color: '#336699', borderRadius: 8 }}>
+```
+
+El único parcial de Dynamic que se puede usar es `abstracts/+import`: expone funciones y mixins (por ejemplo, `media-breakpoint-up`) y no emite CSS. Sus variables SCSS tampoco se usan; en su lugar van las custom properties `var(--bs-*)`.
+
+Lo comprueban `npm run stylelint` (archivos `.css` y `.scss`) y `tests/styleBoundaries.test.ts` (también `.ts` y `.tsx`, incluidos los `style={{}}`). Cada error indica archivo, línea y qué usar en su lugar.
 
 ### Desarrollo local
 
 Para que `npm run dev` se vea bien, `index.html` enlaza el CSS de Dynamic desde el CDN:
 
 ```html
-<link rel="stylesheet" href="https://cdn.dynamicframework.dev/assets/2.9.0/ui-react/css/dynamic-ui.min.css">
+<link rel="stylesheet" href="https://cdn.dynamicframework.dev/assets/2.12.0/ui-react/css/dynamic-ui.min.css">
 ```
 
 Modyo **nunca renderiza `index.html`**: compone la página con su propio template e inyecta `main.js` y `main.css`. Nada de lo que pongas ahí llega al widget publicado.
 
 Dos detalles que importan:
 
-- **La URL tiene que ser absoluta.** Una ruta a `node_modules` la resuelve Vite y el CSS acaba otra vez dentro de `dist/main.css` — el `<link>` parece inocente y el build engorda igual. Hay un test que lo comprueba.
-- **La versión va escrita a mano**, así que puede desalinearse de `package.json`. El test `tests/dynamicCssLink.test.ts` falla si no coinciden.
+- **La URL tiene que ser absoluta.** Una ruta a `node_modules` la resuelve Vite y el CSS acaba otra vez dentro de `dist/main.css`: el `<link>` parece inocente y el build engorda igual.
+- **La versión va escrita a mano**, así que puede desalinearse de `package.json`. El test `tests/dynamicCssLink.test.ts` falla si la URL no es absoluta o si la versión no coincide con la instalada.
 
-`index.html` trae además, comentado, un `<link>` para **el theme de tu sitio**. Descoméntalo y apúntalo al tuyo (sale del `<head>` del sitio, el `<link>` a `/stylesheets/site-...css`): sin él ves los tokens por defecto de Dynamic, no los de tu marca, que es justo el problema que esta sección evita en producción.
+Sin el theme de tu sitio ves los tokens por defecto de Dynamic, no los de tu marca. Para verlos en local, añade a `index.html` un `<link>` al theme **después** del de Dynamic, para que sus valores prevalezcan. La URL sale del `<head>` del sitio publicado (el `<link>` a `/stylesheets/...css`) y también tiene que ser absoluta:
+
+```html
+<link rel="stylesheet" href="https://cdn.dynamicframework.dev/assets/2.12.0/ui-react/css/dynamic-ui.min.css">
+<link rel="stylesheet" href="https://tu-sitio.ejemplo.com/stylesheets/site-theme.css">
+```
 
 > `npm run preview` sirve el `dist` ya construido, así que ahí **no** verás el CSS de Dynamic. Es correcto: es exactamente lo que recibe Modyo. Para ver el widget con estilos usa `npm run dev` o el preview de Modyo CLI, que corre contra el sitio real.
-
-### Cómo se protege
-
-`tests/dynamicCssLink.test.ts` comprueba que `src/main.tsx` no importe `dynamic-ui.css` y que el `<link>` de `index.html` sea una URL absoluta (una ruta local la resolvería Vite y el CSS volvería al bundle).
-
-`cssCodeSplit: false` en `vite.config.ts` sigue siendo correcto: sirve para que los estilos **propios** del widget vayan en un solo archivo.
 
 ## Iconos y tamaño del bundle
 
@@ -301,7 +355,7 @@ diagnosticar:
 2. Si no está, revisa que sea un nombre válido de Lucide en PascalCase
    (`ArrowLeft`, no `arrow-left` ni `check`).
 3. Agrégalo con `include`, o declara el nombre como literal en `src/`.
-4. Para confirmar que el plugin es la causa, compara con `disabled: true`.
+4. Para comprobar que el plugin es la causa, compara con `disabled: true`.
 
 ## Internacionalización (i18n)
 
