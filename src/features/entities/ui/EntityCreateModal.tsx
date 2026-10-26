@@ -17,7 +17,7 @@ import {
   DModal,
   useDPortalContext,
 } from '@dynamic-framework/ui-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { CreateEntityData } from '../model/entity';
@@ -33,10 +33,22 @@ export type EntityPortals = {
 
 export function EntityCreateModal({ payload }: PortalProps<EntityCreatePayload>) {
   const { t } = useTranslation();
-  const { closePortal } = useDPortalContext();
+  const { closePortal, stack } = useDPortalContext<EntityPortals>();
   const [name, setName] = useState('');
   const [isPending, setIsPending] = useState(false);
   const [isError, setIsError] = useState(false);
+
+  // closePortal() cierra el portal de arriba, sea cual sea. Si este modal se
+  // cerró (o se abrió otro encima) mientras se creaba, el resultado de la
+  // creación ya no le toca: cada apertura trae un payload nuevo.
+  const isOnTop = stack[stack.length - 1]?.payload === payload;
+  const isActive = useRef(isOnTop);
+  useEffect(() => {
+    isActive.current = isOnTop;
+    return () => {
+      isActive.current = false;
+    };
+  }, [isOnTop]);
 
   const submit = async () => {
     if (!name.trim() || isPending) {
@@ -46,8 +58,13 @@ export function EntityCreateModal({ payload }: PortalProps<EntityCreatePayload>)
     setIsError(false);
     try {
       await payload.onCreate({ name: name.trim() });
-      closePortal();
+      if (isActive.current) {
+        closePortal();
+      }
     } catch {
+      if (!isActive.current) {
+        return;
+      }
       setIsError(true);
       setIsPending(false);
     }
