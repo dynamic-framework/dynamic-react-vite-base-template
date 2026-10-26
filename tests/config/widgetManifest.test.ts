@@ -42,8 +42,9 @@ function splitPackageRef(ref: string): { name: string; version: string } {
     : { name: '', version: '' };
 }
 
-/** Indica si `value` es una URL https con host. */
-function isHttpsUrl(value: string): boolean {
+/** Indica si `value` es un string con una URL https con host. */
+function isHttpsUrl(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
   try {
     const url = new URL(value);
     return url.protocol === 'https:' && url.hostname !== '';
@@ -118,6 +119,14 @@ describe('isHttpsUrl', () => {
     'figma.com/design/abc',
     '',
   ])('rechaza "%s"', (value) => {
+    expect(isHttpsUrl(value)).toBe(false);
+  });
+
+  it.each([
+    [['https://example.com']],
+    [{ href: 'https://example.com' }],
+    [null],
+  ])('rechaza el valor no string %j', (value) => {
     expect(isHttpsUrl(value)).toBe(false);
   });
 });
