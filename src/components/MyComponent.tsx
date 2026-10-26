@@ -1,15 +1,11 @@
-import { DButton } from '@dynamic-framework/ui-react';
 import classNames from 'classnames';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import MyLink from './MyLink';
-import MyLogos from './MyLogos';
 import SiteLang from './SiteLang';
 
 export default function MyComponent() {
   const { t } = useTranslation();
-  const [showLogos, setShowLogos] = useState(false);
 
   return (
     <div
@@ -25,12 +21,6 @@ export default function MyComponent() {
         <br />
         <span className="font-monospace text-primary-500">src/components/MyComponent.tsx</span>
       </p>
-      <DButton
-        onClick={() => setShowLogos((prevState) => !prevState)}
-        text="Click me!"
-        size="lg"
-      />
-      {showLogos && <MyLogos />}
       <div className="w-100 row mt-14">
         <div className="col mb-6">
           <MyLink
