@@ -14,7 +14,7 @@ Template base para crear widgets con Dynamic Framework usando Vite.
 
 ## Requisitos
 
-- Node.js >= 22.0.0
+- Node.js >= 22.12.0
 - npm >= 10.x
 
 ## Inicio Rápido
