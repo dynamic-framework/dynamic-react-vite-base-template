@@ -33,6 +33,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      '@': path.resolve(__dirname, 'src'),
       '@dynamic-framework/ui-react':
         path.resolve(__dirname, 'node_modules/@dynamic-framework/ui-react'),
       'node_modules/bootstrap':

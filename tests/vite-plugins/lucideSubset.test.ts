@@ -63,8 +63,8 @@ describe('scanSource — catastro de literales', () => {
         return <DIcon icon={icon} />;
       }
     `;
-    const myComponent = `
-      export default function MyComponent() {
+    const homePage = `
+      export default function HomePage() {
         return (
           <>
             <MyLink icon="Book" title="Learn" />
@@ -75,7 +75,7 @@ describe('scanSource — catastro de literales', () => {
       }
     `;
     const wrapper = scanSource(myLink, 'MyLink.tsx');
-    const caller = scanSource(myComponent, 'MyComponent.tsx');
+    const caller = scanSource(homePage, 'HomePage.tsx');
 
     // El envoltorio no aporta nombres, pero si un sitio dinamico.
     expect([...wrapper.literals].filter((l) => l === 'Book')).toHaveLength(0);
@@ -370,7 +370,7 @@ describe('resolveId — guarda por importador', () => {
 
   it('NO sustituye Lucide cuando el importador es codigo del widget', async () => {
     const plugin = ready();
-    const importer = path.join(ROOT, 'src', 'components', 'MyComponent.tsx');
+    const importer = path.join(ROOT, 'src', 'pages', 'HomePage.tsx');
     const resolved = await hook(plugin, 'resolveId').call(makeContext().ctx, 'lucide-react', importer);
     expect(resolved).toBeFalsy();
   });
@@ -460,7 +460,7 @@ describe('load — modulo virtual', () => {
 
 describe('strict — props de icono no literales', () => {
   it('falla el build cuando hay icon={expresion} e include esta vacio', () => {
-    // src/components/MyLink.tsx y src/components/EmptyState.tsx tienen
+    // src/pages/MyLink.tsx y src/shared/ui/EmptyState.tsx tienen
     // `icon={icon}`: son los dos sitios dinamicos reales del template.
     const plugin = lucideSubset({ strict: true, include: [] });
     const { ctx, errors } = makeContext();

@@ -45,24 +45,83 @@ npm run dev
 | `npm run push:publish` | Build + push + publish a Modyo |
 | `npm run push:debug` | Build + push con logging de diagnóstico |
 
-## Estructura del Proyecto
+## Arquitectura
+
+El código se organiza por dominio: cada dominio es una feature con todas sus capas, y lo que no es de ningún dominio vive en `shared/`.
 
 ```
 ├── src/
-│   ├── components/      # Componentes React
-│   ├── styles/          # Estilos SCSS
-│   ├── App.tsx          # Componente principal
-│   └── main.tsx         # Entry point
-├── tests/               # Tests
-├── index.html           # HTML template
-├── vite.config.ts       # Configuración Vite
-├── tsconfig.json        # Configuración TypeScript
-└── package.json
+│   ├── app/                 # Arranque: main.tsx, App.tsx, montaje y providers
+│   ├── config/              # widgetConfig, i18n y variables Liquid (liquid.json)
+│   ├── pages/               # Páginas: componen features
+│   ├── features/
+│   │   └── entities/        # Una carpeta por dominio
+│   │       ├── index.ts     # Única puerta de la feature
+│   │       ├── api/         # Red, dto (*.dto.ts) y mocks (*.mock.ts)
+│   │       ├── model/       # Tipos de dominio y funciones puras
+│   │       ├── service/     # (Opcional) Orquesta api/ y model/
+│   │       ├── hooks/       # TanStack Query sobre api/
+│   │       └── ui/          # Componentes de la feature
+│   ├── shared/              # Transversal, sin dominio
+│   │   ├── http/            # Cliente HTTP
+│   │   ├── ui/              # Estados (carga, vacío, error) y ErrorBoundary
+│   │   ├── hooks/           # Hooks genéricos
+│   │   └── lib/             # Utilidades (liquidParser, errorHandler)
+│   ├── locales/             # Traducciones (es.json, en.json)
+│   └── styles/              # SCSS propio del widget
+├── tests/                   # Espejo de src/, más boundaries/ y vite-plugins/
+├── index.html               # Página de desarrollo
+├── vite.config.ts           # Configuración de Vite y Vitest
+└── eslint.config.js         # Linting y grafo de importaciones
 ```
+
+Todo lo que está bajo `src/` se importa con el alias `@/` (por ejemplo, `@/shared/ui`). Dentro de una misma feature se usan rutas relativas entre sus capas.
+
+### Grafo de importaciones
+
+```
+app ──▶ pages ──▶ features/<x>/index.ts
+ │        │              │
+ └────────┴──────┬───────┘
+                 ▼
+          shared ◀──▶ config      (sin importar features, app ni pages)
+
+Dentro de una feature:  ui ──▶ hooks ──▶ (service) ──▶ api
+                         └────────┴──────────┴─────────▶ model
+```
+
+- `app/` y `pages/` usan una feature solo por su `index.ts` (`@/features/<nombre>`), nunca sus carpetas internas. `pages/` no importa `app/`.
+- En `src/` las importaciones son estáticas: `import()` no se usa, porque el build es un único `main.js` que lo incrusta igual y saltaría el grafo. La excepción es `src/app/modyo-preview-entry.ts`, que carga el servidor de desarrollo.
+- Todas las áreas pueden usar `shared/` y `config/`. Entre ellas, `config/` usa `shared/lib/` (por ejemplo, `liquidParser`) y `shared/http/` lee `config/`; ninguna de las dos importa features, `app/` ni `pages/`.
+- La red (`shared/http/`) solo se usa desde la capa `api/` de una feature. El `index.ts` de una feature expone `hooks/`, `model/` y `ui/`; de `api/` y `service/`, solo tipos, y no reexporta el cliente HTTP.
+- Una feature no entra en otra por dentro: la usa por su `index.ts`. Tampoco importa `app/` ni `pages/`.
+- Dentro de la feature, `ui/` usa `hooks/`; `hooks/` usa `api/` (o `service/`, si existe); `model/` es puro (sin React, red, configuración ni UI) y de las demás capas solo recibe `import type`. `ui/` puede importar tipos de `api/` con `import type`. Entre capas, las rutas relativas son directas (`../hooks/useX`), sin `..` intermedios.
+- Dentro de una feature, sus capas se importan entre sí por ruta relativa, nunca por su propio `index.ts` (`..`, `../index` o `@/features/<propia>`).
+- Los mocks (`*.mock.ts`) solo los importa `api/`, que decide con `USE_MOCKS` (`vars.use-mocks`) si devuelve datos de prueba o llama a la red.
+
+ESLint aplica el grafo (`@typescript-eslint/no-restricted-imports`, en `eslint.config.js`) y cada error dice qué importar en su lugar. `tests/boundaries/architecture.test.ts` comprueba que cada regla sigue aplicando a la ruta de su capa y que todo archivo de `src/` cae bajo alguna; si se renombra una carpeta sin actualizar `eslint.config.js`, el test falla.
+
+ESLint también exige que el texto visible de los componentes salga de `t('...')`, con sus llaves en `src/locales/*.json` (no se admite texto literal en JSX), y que las llaves de `src/config/*.json` vayan en orden alfabético (`npx eslint --fix` las reordena).
+
+### Añadir una feature
+
+1. Crea `src/features/<nombre>/` (en kebab-case) con las capas que necesites: `api/`, `model/`, `hooks/` y `ui/`; `service/` solo si hay lógica que orquestar entre `hooks/` y `api/`.
+2. Exporta desde `src/features/<nombre>/index.ts` solo lo que usen las páginas u otras features.
+3. Úsala desde `src/pages/` con `import { ... } from '@/features/<nombre>'`.
+4. Añade sus tests en `tests/features/<nombre>/`, con la misma estructura de capas.
+
+`src/features/entities/` sirve de ejemplo de cada capa.
+
+### Quitar una feature
+
+1. Borra `src/features/<nombre>/` y `tests/features/<nombre>/`.
+2. Quita sus importaciones de `src/pages/` (y de `src/app/main.tsx` si registró portales).
+3. Quita sus llaves de `src/locales/*.json`.
+4. Ejecuta `npm run lint` y `npm test`: cualquier importación que quede apunta a una ruta que ya no existe.
 
 ## Manifiesto del widget
 
-`widget.manifest.json`, en la raíz, describe el widget fuera del código. Un test (`tests/config/widgetManifest.test.ts`) lo mantiene coherente con `package.json`.
+`widget.manifest.json`, en la raíz, describe el widget fuera del código. Un test (`tests/boundaries/widgetManifest.test.ts`) lo mantiene coherente con `package.json`.
 
 Ejemplo de un widget creado desde el template:
 
@@ -90,7 +149,7 @@ Ejemplo de un widget creado desde el template:
 
 ## Punto de montaje
 
-El widget se monta en los elementos con el atributo `data-widget="widgetName"`, como el contenedor de `index.html`. Si no hay ninguno, se monta en el elemento con `id="widgetName"`, de modo que el `id` sigue funcionando. El nombre se define en la constante `WIDGET_NAME` de `src/main.tsx` y es lo que se cambia al crear un widget desde este template. Para montar varias instancias en una misma página, cada contenedor lleva el mismo `data-widget` y cada uno recibe su propia instancia.
+El widget se monta en los elementos con el atributo `data-widget="widgetName"`, como el contenedor de `index.html`. Si no hay ninguno, se monta en el elemento con `id="widgetName"`, de modo que el `id` sigue funcionando. El nombre se define en la constante `WIDGET_NAME` de `src/app/main.tsx` y es lo que se cambia al crear un widget desde este template. Para montar varias instancias en una misma página, cada contenedor lleva el mismo `data-widget` y cada uno recibe su propia instancia.
 
 La búsqueda de contenedores espera a `DOMContentLoaded` cuando el documento aún se está cargando, de modo que `main.js` funciona igual enlazado en el `<head>` que al final del `<body>`.
 
@@ -159,9 +218,9 @@ Modyo procesa el contenido de un widget como una plantilla Liquid antes de servi
 
 Para evitar esto, el template incluye:
 
-- **`src/config/liquid.json` + `src/utils/liquidParser.ts`**: helper que resuelve tags Liquid (`{{site.language}}`, `{{vars.mi-variable}}`, etc.) contra un mock local en desarrollo (usando `liquidjs`) y los deja pasar tal cual en producción, donde Modyo los reemplaza en el servidor. Úsalo cuando necesites leer variables o contexto del sitio (`site.*`, `vars.*`) desde el código:
+- **`src/config/liquid.json` + `src/shared/lib/liquidParser.ts`**: helper que resuelve tags Liquid (`{{site.language}}`, `{{vars.mi-variable}}`, etc.) contra un mock local en desarrollo (usando `liquidjs`) y los deja pasar tal cual en producción, donde Modyo los reemplaza en el servidor. Úsalo cuando necesites leer variables o contexto del sitio (`site.*`, `vars.*`) desde el código:
   ```ts
-  import liquidParser from '../utils/liquidParser';
+  import liquidParser from '@/shared/lib/liquidParser';
 
   const siteName = liquidParser.parse('{{site.name}}');
   ```
@@ -176,7 +235,7 @@ Para evitar esto, el template incluye:
   export const SITE_NAME = liquidParser.parse('{{site.name}}');
 
   // en cualquier otro componente/módulo
-  import { SITE_NAME } from '../config/widgetConfig';
+  import { SITE_NAME } from '@/config/widgetConfig';
   ```
   Esto mantiene un solo punto de import de `liquidParser`, evita duplicar tags Liquid dispersos por el código y facilita ubicar/mockear todas las variables del sitio en un solo lugar. Solo importa `liquidParser` directamente si estás agregando una variable nueva a `widgetConfig.ts`.
 - Si tienes **texto estático** (traducciones, contenido) que por coincidencia contiene `{{` o `}}` y no quieres que Modyo lo interprete → el plugin ya lo resuelve automáticamente en build, no requiere acción extra. Si ves comportamientos raros con Liquid en producción que no ocurren en local, revisa primero si el string problemático pasa por alguno de estos dos mecanismos.
@@ -195,7 +254,7 @@ Para evitar esto, el template incluye:
 El CSS de Dynamic UI, el theme y las fuentes los carga el sitio una vez para
 toda la página; el widget no los lleva (ver la sección siguiente).
 
-`tests/build/distContents.test.ts` construye el widget y falla si `dist/`
+`tests/boundaries/distContents.test.ts` construye el widget y falla si `dist/`
 contiene cualquier otro archivo. Lo más habitual que lo hace fallar:
 
 - **Un archivo en `public/`.** Vite copia `public/` entero a `dist/`.
@@ -215,7 +274,7 @@ import Logo from './logo.svg?react';
 
 **El sitio de Modyo carga el CSS de Dynamic UI y el theme una vez para toda la página. El widget solo lleva sus estilos propios.**
 
-Por eso `src/main.tsx` importa únicamente `./styles/base.scss` y **no** `dynamic-ui.css`. Si el widget incluyera el CSS de Dynamic:
+Por eso `src/app/main.tsx` importa únicamente `@/styles/base.scss` y **no** `dynamic-ui.css`. Si el widget incluyera el CSS de Dynamic:
 
 - Con N widgets en una página, se descargarían N copias de más del mismo CSS.
 - Cada copia redeclararía `:root` con los valores por defecto de Dynamic. Según el orden en que el sitio enlace `main.css` y el theme, **los tokens de tu marca quedarían pisados**.
@@ -276,7 +335,7 @@ $brand: #336699;
 
 El único parcial de Dynamic que se puede usar es `abstracts/+import`: expone funciones y mixins (por ejemplo, `media-breakpoint-up`) y no emite CSS. Sus variables SCSS tampoco se usan; en su lugar van las custom properties `var(--bs-*)`.
 
-Lo comprueban `npm run stylelint` (archivos `.css` y `.scss`) y `tests/styleBoundaries.test.ts` (también `.ts` y `.tsx`, incluidos los `style={{}}`). Cada error indica archivo, línea y qué usar en su lugar.
+Lo comprueban `npm run stylelint` (archivos `.css` y `.scss`) y `tests/boundaries/styleBoundaries.test.ts` (también `.ts` y `.tsx`, incluidos los `style={{}}`). Cada error indica archivo, línea y qué usar en su lugar.
 
 ### Desarrollo local
 
@@ -291,7 +350,7 @@ Modyo **nunca renderiza `index.html`**: compone la página con su propio templat
 Dos detalles que importan:
 
 - **La URL tiene que ser absoluta.** Una ruta a `node_modules` la resuelve Vite y el CSS acaba otra vez dentro de `dist/main.css`: el `<link>` parece inocente y el build engorda igual.
-- **La versión va escrita a mano**, así que puede desalinearse de `package.json`. El test `tests/dynamicCssLink.test.ts` falla si la URL no es absoluta o si la versión no coincide con la instalada.
+- **La versión va escrita a mano**, así que puede desalinearse de `package.json`. El test `tests/boundaries/dynamicCssLink.test.ts` falla si la URL no es absoluta o si la versión no coincide con la instalada.
 
 Sin el theme de tu sitio ves los tokens por defecto de Dynamic, no los de tu marca. Para verlos en local, añade a `index.html` un `<link>` al theme **después** del de Dynamic, para que sus valores prevalezcan. La URL sale del `<head>` del sitio publicado (el `<link>` a `/stylesheets/...css`) y también tiene que ser absoluta:
 

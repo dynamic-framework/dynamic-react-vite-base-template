@@ -12,8 +12,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
  */
 async function loadParser() {
   vi.resetModules();
-  await import('../../src/config/liquidConfig');
-  const { default: liquidParser } = await import('../../src/utils/liquidParser');
+  await import('@/config/liquidConfig');
+  const { default: liquidParser } = await import('@/shared/lib/liquidParser');
   return liquidParser;
 }
 

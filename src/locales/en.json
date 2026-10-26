@@ -1,6 +1,23 @@
 {
   "title": "Welcome to the Modyo Widget Template",
   "siteLang": "This site is in: {lang}",
+  "home": {
+    "getStarted": "Get started by editing",
+    "links": {
+      "learn": {
+        "title": "Learn",
+        "description": "Get started with Dynamic Framework!"
+      },
+      "themes": {
+        "title": "Themes",
+        "description": "Learn how to create a unique look-and-feel!"
+      },
+      "components": {
+        "title": "Components",
+        "description": "Explore the fully React-based components"
+      }
+    }
+  },
   "states": {
     "loading": "Loading...",
     "empty": {

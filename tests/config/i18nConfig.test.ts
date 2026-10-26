@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { changeLanguage } from '../../src/config/i18nConfig';
-import en from '../../src/locales/en.json';
-import es from '../../src/locales/es.json';
+import { changeLanguage } from '@/config/i18nConfig';
+import en from '@/locales/en.json';
+import es from '@/locales/es.json';
 
 describe('i18nConfig', () => {
   it('usa las traducciones de es cuando el idioma no tiene recursos', async () => {

@@ -3,7 +3,7 @@ import './liquidConfig';
 import type { DContextProvider } from '@dynamic-framework/ui-react';
 import type { ComponentProps } from 'react';
 
-import liquidParser from '../utils/liquidParser';
+import liquidParser from '@/shared/lib/liquidParser';
 
 export const DEFAULT_LANGUAGE = 'es';
 

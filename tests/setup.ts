@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 
 // Mock window.matchMedia. La guarda es para los tests con entorno node
-// (tests/build/), donde no hay window.
+// (tests/boundaries/distContents.test.ts), donde no hay window.
 if (typeof window !== 'undefined') {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
