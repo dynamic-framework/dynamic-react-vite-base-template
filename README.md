@@ -103,14 +103,48 @@ ESLint aplica el grafo (`@typescript-eslint/no-restricted-imports`, en `eslint.c
 
 ESLint también exige que el texto visible de los componentes salga de `t('...')`, con sus llaves en `src/locales/*.json` (no se admite texto literal en JSX), y que las llaves de `src/config/*.json` vayan en orden alfabético (`npx eslint --fix` las reordena).
 
-### Añadir una feature
+### Agregar una feature
 
-1. Crea `src/features/<nombre>/` (en kebab-case) con las capas que necesites: `api/`, `model/`, `hooks/` y `ui/`; `service/` solo si hay lógica que orquestar entre `hooks/` y `api/`.
-2. Exporta desde `src/features/<nombre>/index.ts` solo lo que usen las páginas u otras features.
-3. Úsala desde `src/pages/` con `import { ... } from '@/features/<nombre>'`.
-4. Añade sus tests en `tests/features/<nombre>/`, con la misma estructura de capas.
+`src/features/entities/` es la feature de referencia: tiene cada capa con un ejemplo mínimo y un test por capa en `tests/features/entities/`. Una feature nueva parte de una copia suya.
 
-`src/features/entities/` sirve de ejemplo de cada capa.
+```
+src/features/entities/
+├── index.ts                   # Única puerta: hooks, tipos de model/ y ui/
+├── api/
+│   ├── entityApi.ts           # Una función por endpoint, con AbortSignal y USE_MOCKS
+│   ├── entity.dto.ts          # Forma de la respuesta de la API
+│   └── entity.mock.ts         # Datos de prueba con la forma del dto
+├── model/
+│   ├── entity.ts              # Tipos de dominio
+│   └── entity.mapper.ts       # dto → dominio, función pura
+├── hooks/
+│   └── useEntities.ts         # Llaves de la feature y hooks de TanStack Query
+└── ui/
+    ├── EntityListScreen.tsx   # Bloque con estados de carga, vacío y error
+    └── EntityCreateModal.tsx  # Modal registrado como portal
+```
+
+1. **Copia** la feature y sus tests con el nombre del dominio en kebab-case:
+
+   ```bash
+   cp -R src/features/entities src/features/<nombre>
+   cp -R tests/features/entities tests/features/<nombre>
+   ```
+
+2. **Renombra** archivos e identificadores en las dos copias, respetando mayúsculas: `Entities` → `<Dominios>`, `Entity` → `<Dominio>`, `entities` → `<dominios>`, `entity` → `<dominio>`. Eso cubre `entityApi.ts`, `entity.dto.ts`, `useEntities`, `entityKeys` (su primera llave, `['entities']`, debe ser única en el widget) y el nombre del portal (`'entity-create'`). En los tests, las rutas `@/features/entities/...` pasan a `@/features/<nombre>/...`.
+3. **Ajusta el dominio:** el endpoint en `api/`, los campos del dto y del tipo de dominio, y el mapper que los une.
+4. **Textos:** copia el bloque `entities` de `src/locales/es.json` y `src/locales/en.json` con el nombre nuevo; el componente usa `t('<dominios>.list.title')` y similares.
+5. **Usa la feature** desde `src/pages/` con `import { ... } from '@/features/<nombre>'`. Si tiene portales, regístralos en `availablePortals` del `DContextProvider` de `src/app/main.tsx`.
+6. Ejecuta `npm run lint`, `npm test` y `npm run build`.
+
+Si el dominio es pequeño, borra lo que no use:
+
+- **Solo lectura:** quita `createEntity` de `api/`, `useCreateEntity` de `hooks/`, `CreateEntityData` de `model/`, `EntityCreateModal.tsx` (y su registro en `main.tsx`), el botón de crear de `EntityListScreen.tsx` y los tests de creación.
+- **Sin filtros:** quita `EntityFilters`, el parámetro `filters` de `api/` y de `hooks/` y la búsqueda de `EntityListScreen.tsx`.
+- **Sin pantalla propia:** si otra feature o una página pinta los datos, borra `ui/` y deja que `index.ts` exporte solo los hooks y los tipos.
+- **API sin transformar:** si la respuesta ya tiene la forma del dominio, el mapper puede reducirse a devolver el dto, pero mantenlo: es el único punto que cambia si la API cambia.
+
+`service/` no viene en la referencia. Créalo cuando una operación combine varios endpoints o aplique reglas que no dependen de React; los hooks lo usan en lugar de `api/`. Si solo reenviaría llamadas a `api/`, sobra.
 
 ### Quitar una feature
 

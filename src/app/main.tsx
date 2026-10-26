@@ -3,6 +3,7 @@ import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 
 import '@/config/i18nConfig';
+import { EntityCreateModal, type EntityPortals } from '@/features/entities';
 
 import App from './App';
 import { resolveMountTargets } from './mountTargets';
@@ -22,7 +23,9 @@ function mount() {
     target.setAttribute('data-mounted', '');
     ReactDOM.createRoot(target).render(
       <StrictMode>
-        <DContextProvider>
+        <DContextProvider<EntityPortals>
+          availablePortals={{ 'entity-create': EntityCreateModal }}
+        >
           <App />
         </DContextProvider>
       </StrictMode>,
