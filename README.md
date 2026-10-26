@@ -414,7 +414,7 @@ Lo comprueban `npm run stylelint` (archivos `.css` y `.scss`) y `tests/boundarie
 Para que `npm run dev` se vea bien, `index.html` enlaza el CSS de Dynamic desde el CDN:
 
 ```html
-<link rel="stylesheet" href="https://cdn.dynamicframework.dev/assets/2.12.0/ui-react/css/dynamic-ui.min.css">
+<link rel="stylesheet" href="https://cdn.dynamicframework.dev/assets/2.12.1/ui-react/css/dynamic-ui.min.css">
 ```
 
 Modyo **nunca renderiza `index.html`**: compone la página con su propio template e inyecta `main.js` y `main.css`. Nada de lo que pongas ahí llega al widget publicado.
@@ -427,7 +427,7 @@ Dos detalles que importan:
 Sin el theme de tu sitio ves los tokens por defecto de Dynamic, no los de tu marca. Para verlos en local, añade a `index.html` un `<link>` al theme **después** del de Dynamic, para que sus valores prevalezcan. La URL sale del `<head>` del sitio publicado (el `<link>` a `/stylesheets/...css`) y también tiene que ser absoluta:
 
 ```html
-<link rel="stylesheet" href="https://cdn.dynamicframework.dev/assets/2.12.0/ui-react/css/dynamic-ui.min.css">
+<link rel="stylesheet" href="https://cdn.dynamicframework.dev/assets/2.12.1/ui-react/css/dynamic-ui.min.css">
 <link rel="stylesheet" href="https://tu-sitio.ejemplo.com/stylesheets/site-theme.css">
 ```
 
