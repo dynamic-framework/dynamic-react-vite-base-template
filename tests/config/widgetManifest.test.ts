@@ -42,6 +42,16 @@ function splitPackageRef(ref: string): { name: string; version: string } {
     : { name: '', version: '' };
 }
 
+/** Indica si `value` es una URL https con host. */
+function isHttpsUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && url.hostname !== '';
+  } catch {
+    return false;
+  }
+}
+
 function expectPackageRef(ref: string) {
   const { name, version } = splitPackageRef(ref);
   expect(name, `"${ref}" debe tener la forma paquete@versión`).toMatch(PACKAGE_NAME);
@@ -88,7 +98,26 @@ describe('widget.manifest.json', () => {
     for (const ref of manifest.design) {
       expect(typeof ref.name).toBe('string');
       expect(ref.name.trim()).not.toBe('');
-      expect(ref.url).toMatch(/^https:\/\/\S+$/);
+      expect(isHttpsUrl(ref.url), `"${ref.url}" debe ser una URL https`).toBe(true);
     }
+  });
+});
+
+describe('isHttpsUrl', () => {
+  it.each([
+    'https://www.figma.com/design/abc',
+    'https://example.com',
+  ])('acepta %s', (value) => {
+    expect(isHttpsUrl(value)).toBe(true);
+  });
+
+  it.each([
+    'https://#',
+    'https://?',
+    'http://example.com',
+    'figma.com/design/abc',
+    '',
+  ])('rechaza "%s"', (value) => {
+    expect(isHttpsUrl(value)).toBe(false);
   });
 });
