@@ -121,7 +121,7 @@ src/features/entities/
 │   └── useEntities.ts         # Llaves de la feature y hooks de TanStack Query
 └── ui/
     ├── EntityListScreen.tsx   # Bloque con estados de carga, vacío y error
-    └── EntityCreateModal.tsx  # Modal registrado como portal
+    └── EntityCreateModal.tsx  # Modal que se abre como portal
 ```
 
 1. **Copia** la feature y sus tests con el nombre del dominio en kebab-case:
@@ -134,12 +134,21 @@ src/features/entities/
 2. **Renombra** archivos e identificadores en las dos copias, respetando mayúsculas: `Entities` → `<Dominios>`, `Entity` → `<Dominio>`, `entities` → `<dominios>`, `entity` → `<dominio>`. Eso cubre `entityApi.ts`, `entity.dto.ts`, `useEntities`, `entityKeys` (su primera llave, `['entities']`, debe ser única en el widget) y el nombre del portal (`'entity-create'`). En los tests, las rutas `@/features/entities/...` pasan a `@/features/<nombre>/...`.
 3. **Ajusta el dominio:** el endpoint en `api/`, los campos del dto y del tipo de dominio, y el mapper que los une.
 4. **Textos:** copia el bloque `entities` de `src/locales/es.json` y `src/locales/en.json` con el nombre nuevo; el componente usa `t('<dominios>.list.title')` y similares.
-5. **Usa la feature** desde `src/pages/` con `import { ... } from '@/features/<nombre>'`. Si tiene portales, regístralos en `availablePortals` del `DContextProvider` de `src/app/main.tsx`.
-6. Ejecuta `npm run lint`, `npm test` y `npm run build`.
+5. **Usa la feature** desde `src/pages/` con `import { ... } from '@/features/<nombre>'`.
+6. **Registra el modal** cuando el widget lo use. El template arranca con `availablePortals` vacío en el `DContextProvider` de `src/app/main.tsx`; el modal de la feature se registra ahí con su nombre de portal. Con la feature de referencia:
+
+   ```tsx
+   import { EntityCreateModal, type EntityPortals } from '@/features/entities';
+
+   <DContextProvider<EntityPortals> availablePortals={{ 'entity-create': EntityCreateModal }}>
+   ```
+
+   Registrarlo incluye `DModal` y su animación (`framer-motion`) en `main.js`, aunque la página no llegue a abrirlo, así que no lo registres si el widget no lo abre. Si una pantalla llama a `openPortal` con un nombre sin registrar, Dynamic lanza un error.
+7. Ejecuta `npm run lint`, `npm test` y `npm run build`.
 
 Si el dominio es pequeño, borra lo que no use:
 
-- **Solo lectura:** quita `createEntity` de `api/`, `useCreateEntity` de `hooks/`, `CreateEntityData` de `model/`, `EntityCreateModal.tsx` (y su registro en `main.tsx`), el botón de crear de `EntityListScreen.tsx` y los tests de creación.
+- **Solo lectura:** quita `createEntity` de `api/`, `useCreateEntity` de `hooks/`, `CreateEntityData` de `model/`, `EntityCreateModal.tsx` (y su registro en `main.tsx`, si lo hiciste), el botón de crear de `EntityListScreen.tsx` y los tests de creación.
 - **Sin filtros:** quita `EntityFilters`, el parámetro `filters` de `api/` y de `hooks/` y la búsqueda de `EntityListScreen.tsx`.
 - **Sin pantalla propia:** si otra feature o una página pinta los datos, borra `ui/` y deja que `index.ts` exporte solo los hooks y los tipos.
 - **API sin transformar:** si la respuesta ya tiene la forma del dominio, el mapper puede reducirse a devolver el dto, pero mantenlo: es el único punto que cambia si la API cambia.

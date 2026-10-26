@@ -5,7 +5,7 @@
  *   cuando se deja de escribir, no en cada tecla.
  * - DDataStateWrapper pinta carga, error o vacío, en ese orden, y entrega los
  *   datos a la lista cuando los hay.
- * - El modal de creación se abre con openPortal; el portal está registrado en
+ * - El modal de creación se abre con openPortal; el portal se registra en
  *   el DContextProvider de src/app/main.tsx y recibe la mutación en el
  *   payload, porque se pinta fuera del QueryProvider.
  */
