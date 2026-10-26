@@ -230,8 +230,10 @@ Solo actúa en `build`. En `npm run dev` y en el preview del CLI de Modyo el
 widget ve Lucide entero, que es lo que quieres mientras iteras: cualquier nombre
 de icono funciona sin tocar configuración.
 
-Cada build escribe `dist/icons-manifest.json` con la lista final y de dónde vino
-cada nombre. Es el primer sitio donde mirar si un icono no aparece.
+Cada build escribe `node_modules/.vite/icons-manifest.json` con la lista final y
+de dónde vino cada nombre, e imprime esa ruta al terminar. Queda fuera de
+`dist/`, así que no se publica con el widget. Es el primer sitio donde mirar si
+un icono no aparece.
 
 ### Cómo declarar iconos calculados
 
@@ -279,6 +281,7 @@ de fallar.
 | `include` | `[]` | Nombres de icono que no aparecen como literal en `src/`. |
 | `strict` | `false` | Si es `true`, **falla el build** cuando encuentra una prop de icono con expresión no literal (`icon={algo}`, `iconStart={…}`, `iconEnd={…}`) en `src/` y `include` no aporta ningún nombre válido de icono, ya sea porque está vacío o porque todos sus nombres se descartaron por no ser exports de Lucide. Útil para garantizar que ningún icono se pierda en silencio. Está desactivado por defecto porque el propio template tiene dos envoltorios legítimos (`MyLink`, `EmptyState`) cuyos nombres sí están como literales en el código que los invoca. |
 | `disabled` | `false` | Desactiva el plugin por completo; el bundle vuelve a llevar Lucide entero. |
+| `manifestFile` | `node_modules/.vite/icons-manifest.json` | Ruta del manifest de iconos, absoluta o relativa a la raíz del proyecto. |
 
 ### Cómo desactivarlo
 
@@ -299,7 +302,8 @@ y simplemente no se ve nada. Eso ya pasa hoy con cualquier nombre que no exista
 en Lucide; el plugin amplía el conjunto de nombres que caen en ese camino. Para
 diagnosticar:
 
-1. Mira `dist/icons-manifest.json` y comprueba si el nombre está en `included`.
+1. Mira `node_modules/.vite/icons-manifest.json` y comprueba si el nombre está
+   en `included`.
 2. Si no está, revisa que sea un nombre válido de Lucide en PascalCase
    (`ArrowLeft`, no `arrow-left` ni `check`).
 3. Agrégalo con `include`, o declara el nombre como literal en `src/`.

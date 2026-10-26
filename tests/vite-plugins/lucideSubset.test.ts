@@ -1,7 +1,10 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
-import { describe, expect, it } from 'vitest';
+import {
+  afterEach, beforeEach, describe, expect, it,
+} from 'vitest';
 
 import lucideSubset, {
   buildIconFileMap,
@@ -336,15 +339,14 @@ describe('loadCoreIcons — nucleo y respaldo', () => {
 
   it('avisa en el build si y solo si el nucleo viene del respaldo', async () => {
     const plugin = lucideSubset();
-    const { ctx, warnings, emitted } = makeContext();
+    const { ctx, warnings } = makeContext();
     hook(plugin, 'configResolved').call(null, { root: ROOT });
     await hook(plugin, 'buildStart').call(ctx);
-    hook(plugin, 'generateBundle').call(ctx);
 
     // Con 2.8.0/2.9.0 el nucleo sale del respaldo y hay aviso; a partir de
     // 2.10 sale del paquete y no debe haberlo. El test se ata a coreSource,
     // no a la version instalada.
-    const { coreSource } = JSON.parse(emitted[0].source);
+    const coreSource = loadCoreIcons(resolveUiReactDir(ROOT)).source;
     const aviso = warnings.some((w) => w.includes('lista de respaldo del nucleo'));
     expect(aviso).toBe(coreSource === 'fallback');
   });
@@ -512,16 +514,67 @@ describe('strict — props de icono no literales', () => {
 });
 
 describe('manifest', () => {
-  it('emite icons-manifest.json con la procedencia de cada nombre', async () => {
-    const plugin = lucideSubset({ include: ['Rocket'] });
+  // Cada test escribe en su propio directorio temporal via manifestFile, para
+  // no pisar el manifest del ultimo build en node_modules/.vite/.
+  let tmpDir: string;
+  let manifestFile: string;
+  const readManifest = () => JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lucide-subset-'));
+    manifestFile = path.join(tmpDir, 'icons-manifest.json');
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('no emite nada al bundle: dist/ no recibe el manifest', async () => {
+    const plugin = lucideSubset({ manifestFile });
     const { ctx, emitted } = makeContext();
     hook(plugin, 'configResolved').call(null, { root: ROOT });
     await hook(plugin, 'buildStart').call(ctx);
-    hook(plugin, 'generateBundle').call(ctx);
+    hook(plugin, 'writeBundle').call(ctx);
 
-    expect(emitted).toHaveLength(1);
-    expect(emitted[0].fileName).toBe('icons-manifest.json');
-    const manifest = JSON.parse(emitted[0].source);
+    expect(emitted).toHaveLength(0);
+    expect(fs.existsSync(manifestFile)).toBe(true);
+  });
+
+  it('sin manifestFile, escribe en el cacheDir de Vite e informa la ruta', async () => {
+    const plugin = lucideSubset();
+    const { ctx } = makeContext();
+    const infos: string[] = [];
+    hook(plugin, 'configResolved').call(null, {
+      root: ROOT,
+      cacheDir: tmpDir,
+      logger: { info: (message: string) => { infos.push(message); } },
+    });
+    await hook(plugin, 'buildStart').call(ctx);
+    hook(plugin, 'writeBundle').call(ctx);
+
+    expect(fs.existsSync(manifestFile)).toBe(true);
+    expect(infos).toHaveLength(1);
+    expect(infos[0]).toContain(path.relative(ROOT, manifestFile));
+  });
+
+  it('con disabled no escribe el manifest', () => {
+    const plugin = lucideSubset({ disabled: true, manifestFile });
+    const { ctx } = makeContext();
+    hook(plugin, 'configResolved').call(null, { root: ROOT });
+    hook(plugin, 'buildStart').call(ctx);
+    hook(plugin, 'writeBundle').call(ctx);
+
+    expect(fs.existsSync(manifestFile)).toBe(false);
+  });
+
+  it('escribe icons-manifest.json con la procedencia de cada nombre', async () => {
+    const plugin = lucideSubset({ include: ['Rocket'], manifestFile });
+    const { ctx } = makeContext();
+    hook(plugin, 'configResolved').call(null, { root: ROOT });
+    await hook(plugin, 'buildStart').call(ctx);
+    hook(plugin, 'writeBundle').call(ctx);
+
+    const manifest = readManifest();
     // Sin fijar version ni fuente del nucleo: ambas dependen de las
     // dependencias instaladas y no de la correccion del plugin.
     expect(['package', 'fallback']).toContain(manifest.coreSource);
@@ -542,13 +595,13 @@ describe('manifest', () => {
     // dist/icons-core.json del paquete: ninguno garantiza estar sin repetidos.
     // `included` ya es un Set, asi que un repetido nunca llega al modulo
     // virtual, pero si salia dos veces en el manifest y en el aviso.
-    const plugin = lucideSubset({ include: ['Rocket', 'Rocket', 'NoExisteEsteIcono', 'NoExisteEsteIcono'] });
-    const { ctx, warnings, emitted } = makeContext();
+    const plugin = lucideSubset({ include: ['Rocket', 'Rocket', 'NoExisteEsteIcono', 'NoExisteEsteIcono'], manifestFile });
+    const { ctx, warnings } = makeContext();
     hook(plugin, 'configResolved').call(null, { root: ROOT });
     await hook(plugin, 'buildStart').call(ctx);
-    hook(plugin, 'generateBundle').call(ctx);
+    hook(plugin, 'writeBundle').call(ctx);
 
-    const manifest = JSON.parse(emitted[0].source);
+    const manifest = readManifest();
     expect(manifest.fromInclude).toEqual(['Rocket']);
     // El nombre inexistente se nombra una sola vez en el aviso.
     const aviso = warnings.find((w) => w.includes('NoExisteEsteIcono'))!;
@@ -562,35 +615,35 @@ describe('manifest', () => {
   it('no avisa de nombres omitidos cuando include solo trae blancos', async () => {
     // Antes estas entradas llegaban a unknownIncluded y el aviso se renderizaba
     // como una coma sin nada delante: `... y se omiten: ,    `.
-    const plugin = lucideSubset({ include: ['', '   '] });
-    const { ctx, warnings, emitted } = makeContext();
+    const plugin = lucideSubset({ include: ['', '   '], manifestFile });
+    const { ctx, warnings } = makeContext();
     hook(plugin, 'configResolved').call(null, { root: ROOT });
     await hook(plugin, 'buildStart').call(ctx);
-    hook(plugin, 'generateBundle').call(ctx);
+    hook(plugin, 'writeBundle').call(ctx);
 
     expect(warnings.some((w) => w.includes('se omiten'))).toBe(false);
-    expect(JSON.parse(emitted[0].source).fromInclude).toEqual([]);
+    expect(readManifest().fromInclude).toEqual([]);
   });
 
   it('acepta un nombre de include con espacios alrededor', async () => {
-    const plugin = lucideSubset({ include: ['  Rocket  '] });
-    const { ctx, warnings, emitted } = makeContext();
+    const plugin = lucideSubset({ include: ['  Rocket  '], manifestFile });
+    const { ctx, warnings } = makeContext();
     hook(plugin, 'configResolved').call(null, { root: ROOT });
     await hook(plugin, 'buildStart').call(ctx);
-    hook(plugin, 'generateBundle').call(ctx);
+    hook(plugin, 'writeBundle').call(ctx);
 
-    expect(JSON.parse(emitted[0].source).fromInclude).toEqual(['Rocket']);
+    expect(readManifest().fromInclude).toEqual(['Rocket']);
     expect(warnings.some((w) => w.includes('se omiten'))).toBe(false);
   });
 
   it('avisa y omite nombres de include que no existen en Lucide', async () => {
-    const plugin = lucideSubset({ include: ['NoExisteEsteIcono', 'Rocket'] });
-    const { ctx, warnings, emitted } = makeContext();
+    const plugin = lucideSubset({ include: ['NoExisteEsteIcono', 'Rocket'], manifestFile });
+    const { ctx, warnings } = makeContext();
     hook(plugin, 'configResolved').call(null, { root: ROOT });
     await hook(plugin, 'buildStart').call(ctx);
-    hook(plugin, 'generateBundle').call(ctx);
+    hook(plugin, 'writeBundle').call(ctx);
     expect(warnings.some((w) => w.includes('NoExisteEsteIcono'))).toBe(true);
-    expect(JSON.parse(emitted[0].source).fromInclude).toEqual(['Rocket']);
+    expect(readManifest().fromInclude).toEqual(['Rocket']);
   });
 });
 
