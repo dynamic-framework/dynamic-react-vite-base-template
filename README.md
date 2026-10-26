@@ -60,6 +60,34 @@ npm run dev
 └── package.json
 ```
 
+## Manifiesto del widget
+
+`widget.manifest.json`, en la raíz, describe el widget fuera del código. Un test (`tests/config/widgetManifest.test.ts`) lo mantiene coherente con `package.json`.
+
+Ejemplo de un widget creado desde el template:
+
+```json
+{
+  "name": "my-widget",
+  "version": "0.1.0",
+  "dynamicUi": "<versión exacta de @dynamic-framework/ui-react>",
+  "template": "@dynamic-framework/dynamic-react-vite-base-template@<versión del template>",
+  "theme": null,
+  "design": [
+    { "name": "Pantalla principal", "url": "https://www.figma.com/design/..." }
+  ]
+}
+```
+
+| Campo | Quién lo edita | Regla |
+|-------|----------------|-------|
+| `name` | Quien crea el widget, junto con `name` de `package.json` | Igual a `name` de `package.json` |
+| `version` | Quien publica, en cada versión del widget | Igual a `version` de `package.json` |
+| `dynamicUi` | Quien actualiza `@dynamic-framework/ui-react` | Igual al pin exacto de la dependencia en `package.json`; un rango (`^`, `~`) hace fallar el test |
+| `template` | Nadie: registra el template y la versión de los que sale el widget | Forma `paquete@versión` |
+| `theme` | Quien crea el widget, si usa un theme publicado como paquete | `null` o `paquete@versión` |
+| `design` | Quien crea el widget, opcional | Lista de `{ "name": "...", "url": "https://..." }` con las referencias de diseño |
+
 ## Punto de montaje
 
 El widget se monta en los elementos con el atributo `data-widget="widgetName"`, como el contenedor de `index.html`. Si no hay ninguno, se monta en el elemento con `id="widgetName"`, de modo que el `id` sigue funcionando. El nombre se define en la constante `WIDGET_NAME` de `src/main.tsx` y es lo que se cambia al crear un widget desde este template. Para montar varias instancias en una misma página, cada contenedor lleva el mismo `data-widget` y cada uno recibe su propia instancia.
