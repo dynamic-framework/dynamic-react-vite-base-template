@@ -10,4 +10,3 @@ export { LoadingState } from './LoadingState';
 // Widget components
 export { default as MyComponent } from './MyComponent';
 export { default as MyLink } from './MyLink';
-export { default as MyLogos } from './MyLogos';

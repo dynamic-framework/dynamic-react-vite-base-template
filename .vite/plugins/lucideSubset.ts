@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import ts from 'typescript';
-import type { Plugin } from 'vite';
+import type { Logger, Plugin } from 'vite';
 
 /**
  * Sustituye el módulo `lucide-react` que importa @dynamic-framework/ui-react
@@ -131,6 +131,13 @@ export type LucideSubsetOptions = {
   strict?: boolean;
   /** Desactiva el plugin por completo y deja Lucide entero en el bundle. */
   disabled?: boolean;
+  /**
+   * Ruta de `icons-manifest.json`, absoluta o relativa a la raíz del proyecto.
+   * Por defecto, `icons-manifest.json` dentro del `cacheDir` de Vite
+   * (`node_modules/.vite/`): fuera de `dist/`, así que no se publica con el
+   * widget ni se versiona.
+   */
+  manifestFile?: string;
 };
 
 export type IconSourceScan = {
@@ -373,9 +380,13 @@ export type IconManifest = {
 };
 
 export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin {
-  const { include = [], strict = false, disabled = false } = options;
+  const {
+    include = [], strict = false, disabled = false, manifestFile,
+  } = options;
 
   let root = process.cwd();
+  let cacheDir: string | undefined;
+  let logger: Logger | undefined;
   let paths: LucidePaths;
   let iconFileMap: Map<string, string>;
   let manifest: IconManifest;
@@ -391,6 +402,7 @@ export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin 
 
     configResolved(config) {
       root = config.root;
+      ({ cacheDir, logger } = config);
     },
 
     buildStart() {
@@ -536,13 +548,21 @@ export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin 
       return `${lines.join('\n')}\n`;
     },
 
-    generateBundle() {
+    // El manifest se escribe con fs y no con emitFile: un asset emitido
+    // acabaría en dist/ y se publicaría con el widget, que solo debe llevar
+    // main.js, main.css e index.html.
+    writeBundle() {
       if (disabled) return;
-      this.emitFile({
-        type: 'asset',
-        fileName: 'icons-manifest.json',
-        source: `${JSON.stringify(manifest, null, 2)}\n`,
-      });
+      const file = path.resolve(
+        root,
+        manifestFile ?? path.join(cacheDir ?? path.join(root, 'node_modules', '.vite'), 'icons-manifest.json'),
+      );
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+      logger?.info(
+        `[lucide-subset] manifest de iconos: ${path.relative(root, file)} `
+        + `(${manifest.included.length} iconos)`,
+      );
     },
   };
 }

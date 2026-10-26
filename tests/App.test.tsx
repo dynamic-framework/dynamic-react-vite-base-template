@@ -40,6 +40,5 @@ describe('<App />', () => {
   it('should render MyComponent', () => {
     render(<App />);
     expect(screen.getByText('Get started by editing')).toBeInTheDocument();
-    expect(screen.getByText('Click me!')).toBeInTheDocument();
   });
 });

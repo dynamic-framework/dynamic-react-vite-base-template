@@ -48,7 +48,6 @@ npm run dev
 ## Estructura del Proyecto
 
 ```
-├── public/              # Assets estáticos
 ├── src/
 │   ├── components/      # Componentes React
 │   ├── styles/          # Estilos SCSS
@@ -182,6 +181,36 @@ Para evitar esto, el template incluye:
   Esto mantiene un solo punto de import de `liquidParser`, evita duplicar tags Liquid dispersos por el código y facilita ubicar/mockear todas las variables del sitio en un solo lugar. Solo importa `liquidParser` directamente si estás agregando una variable nueva a `widgetConfig.ts`.
 - Si tienes **texto estático** (traducciones, contenido) que por coincidencia contiene `{{` o `}}` y no quieres que Modyo lo interprete → el plugin ya lo resuelve automáticamente en build, no requiere acción extra. Si ves comportamientos raros con Liquid en producción que no ocurren en local, revisa primero si el string problemático pasa por alguno de estos dos mecanismos.
 
+## Qué publica el widget
+
+`npm run build` deja en `dist/` exactamente tres archivos, que son los que sube
+`npm run push`:
+
+| Archivo | Qué es |
+| --- | --- |
+| `main.js` | El código del widget: React, sus dependencias y los iconos de Lucide que usa. |
+| `main.css` | Solo los estilos propios del widget (`src/styles/base.scss`). |
+| `index.html` | La página de desarrollo. Modyo no la renderiza. |
+
+El CSS de Dynamic UI, el theme y las fuentes los carga el sitio una vez para
+toda la página; el widget no los lleva (ver la sección siguiente).
+
+`tests/build/distContents.test.ts` construye el widget y falla si `dist/`
+contiene cualquier otro archivo. Lo más habitual que lo hace fallar:
+
+- **Un archivo en `public/`.** Vite copia `public/` entero a `dist/`.
+- **Una imagen importada en el código que Vite emite como archivo aparte**
+  (`import logo from './logo.png'`). Vite solo incrusta en el bundle las de
+  menos de 4 KB; el resto sale como archivo en `dist/` y no se publicaría.
+
+Las imágenes se sirven desde el sitio (gestor de archivos de Modyo o un CDN) y
+se referencian por URL. Un SVG pequeño puede ir en línea como componente con
+`vite-plugin-svgr`, que el template trae configurado para eso:
+
+```tsx
+import Logo from './logo.svg?react';
+```
+
 ## Estilos: qué lleva el widget y qué pone el sitio
 
 **El sitio de Modyo carga el CSS de Dynamic UI y el theme una vez para toda la página. El widget solo lleva sus estilos propios.**
@@ -312,8 +341,10 @@ Solo actúa en `build`. En `npm run dev` y en el preview del CLI de Modyo el
 widget ve Lucide entero, que es lo que quieres mientras iteras: cualquier nombre
 de icono funciona sin tocar configuración.
 
-Cada build escribe `dist/icons-manifest.json` con la lista final y de dónde vino
-cada nombre. Es el primer sitio donde mirar si un icono no aparece.
+Cada build escribe `node_modules/.vite/icons-manifest.json` con la lista final y
+de dónde vino cada nombre, e imprime esa ruta al terminar. Queda fuera de
+`dist/`, así que no se publica con el widget. Es el primer sitio donde mirar si
+un icono no aparece.
 
 ### Cómo declarar iconos calculados
 
@@ -361,6 +392,7 @@ de fallar.
 | `include` | `[]` | Nombres de icono que no aparecen como literal en `src/`. |
 | `strict` | `false` | Si es `true`, **falla el build** cuando encuentra una prop de icono con expresión no literal (`icon={algo}`, `iconStart={…}`, `iconEnd={…}`) en `src/` y `include` no aporta ningún nombre válido de icono, ya sea porque está vacío o porque todos sus nombres se descartaron por no ser exports de Lucide. Útil para garantizar que ningún icono se pierda en silencio. Está desactivado por defecto porque el propio template tiene dos envoltorios legítimos (`MyLink`, `EmptyState`) cuyos nombres sí están como literales en el código que los invoca. |
 | `disabled` | `false` | Desactiva el plugin por completo; el bundle vuelve a llevar Lucide entero. |
+| `manifestFile` | `node_modules/.vite/icons-manifest.json` | Ruta del manifest de iconos, absoluta o relativa a la raíz del proyecto. |
 
 ### Cómo desactivarlo
 
@@ -381,7 +413,8 @@ y simplemente no se ve nada. Eso ya pasa hoy con cualquier nombre que no exista
 en Lucide; el plugin amplía el conjunto de nombres que caen en ese camino. Para
 diagnosticar:
 
-1. Mira `dist/icons-manifest.json` y comprueba si el nombre está en `included`.
+1. Mira `node_modules/.vite/icons-manifest.json` y comprueba si el nombre está
+   en `included`.
 2. Si no está, revisa que sea un nombre válido de Lucide en PascalCase
    (`ArrowLeft`, no `arrow-left` ni `check`).
 3. Agrégalo con `include`, o declara el nombre como literal en `src/`.
@@ -429,9 +462,10 @@ configureI18n(resources, { lng: SITE_LANG, fallbackLng: DEFAULT_LANGUAGE });
 npm run build
 ```
 
-Output en `dist/`:
+Output en `dist/` (ver [Qué publica el widget](#qué-publica-el-widget)):
 - `main.js` - Bundle JavaScript
 - `main.css` - Estilos compilados
+- `index.html` - Página de desarrollo
 
 ## Recursos
 
