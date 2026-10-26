@@ -48,7 +48,6 @@ npm run dev
 ## Estructura del Proyecto
 
 ```
-├── public/              # Assets estáticos
 ├── src/
 │   ├── components/      # Componentes React
 │   ├── styles/          # Estilos SCSS
