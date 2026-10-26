@@ -6,7 +6,3 @@ export { ErrorBoundary } from './ErrorBoundary';
 export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';
 export { LoadingState } from './LoadingState';
-
-// Widget components
-export { default as MyComponent } from './MyComponent';
-export { default as MyLink } from './MyLink';

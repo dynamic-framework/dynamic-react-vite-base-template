@@ -5,16 +5,18 @@
  * loading state are TanStack Query's job. (In mock mode `createEntity` mutates
  * the in-memory fixture below; that's a mock-only convenience, not repository
  * state.) They return mocks or call the API depending on `USE_MOCKS`, and
- * translate API shapes into domain types. Mirrors the structure of
- * `src/services/api/`. Copy this file to
- * `src/services/repositories/<EntityName>Repository.ts` (PascalCase entity +
+ * translate API shapes into domain types. Copy this file to
+ * `src/features/<name>/api/<EntityName>Repository.ts` (PascalCase entity +
  * `Repository.ts`) and rename for your own domain — the query hook in
- * `src/hooks/useEntities.ts` shows how to consume it.
+ * `../hooks/useEntities.ts` shows how to consume it.
  */
-import { USE_MOCKS } from '../../config/widgetConfig';
-import type { ApiEntity, CreateEntityData, Entity } from '../../types';
-import { api } from '../api/client';
-import { mockEntities } from '../mocks/entity';
+import { USE_MOCKS } from '@/config/widgetConfig';
+import { api } from '@/shared/http/client';
+
+import type { CreateEntityData, Entity } from '../model/entity';
+
+import type { ApiEntity } from './entity.dto';
+import { mockEntities } from './entity.mock';
 
 const MOCK_DELAY = 500; // ms
 

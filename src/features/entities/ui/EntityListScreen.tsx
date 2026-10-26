@@ -10,18 +10,12 @@
  * `availablePortals` para que el ejemplo sea copy-runnable en aislamiento.
  *
  * Al adaptar este patrón a un widget de producción:
- *   1. Mover `availablePortals` al DContextProvider de tu main.tsx — NO crear
+ *   1. Mover `availablePortals` al DContextProvider de src/app/main.tsx — NO crear
  *      un DContextProvider anidado en producción.
  *   2. Remover el wrapper DContextProvider local de este componente.
  *
- * El provider anidado existe únicamente porque este archivo está excluido de
- * tsconfig.app.json y vive como referencia, no como producción.
- *
- * Issues upstream que matizan este patrón:
- *   - https://github.com/dynamic-framework/dynamic-ui/issues/1051
- *     (debounce nativo en DInput → useDebouncedValue dejaría de ser necesario)
- *   - https://github.com/dynamic-framework/dynamic-ui/issues/1052
- *     (story de Storybook con openPortal para evitar confusión sobre el patrón)
+ * El provider anidado existe únicamente porque esta pantalla vive como
+ * referencia: ninguna página la monta.
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -33,9 +27,10 @@ import {
   useDPortalContext,
 } from '@dynamic-framework/ui-react';
 
-import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import { EmptyState, ErrorState, LoadingState } from '../components';
-import type { Entity } from '../types';
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
+import { EmptyState, ErrorState, LoadingState } from '@/shared/ui';
+
+import type { Entity } from '../model/entity';
 
 import { EntityCreateModal, type EntityCreatePayload } from './EntityCreateModal';
 
@@ -45,8 +40,8 @@ type EntityPortalPayloads = {
 
 /**
  * Mock data fetch para fines del ejemplo. En un widget real, esto sería un
- * hook con TanStack Query (ej. useEntitiesQuery) sobre un repository — ver
- * QueryHookTemplate.ts y RepositoryTemplate.ts en este mismo directorio.
+ * hook con TanStack Query sobre un repository — ver ../hooks/useEntities.ts y
+ * ../api/EntityRepository.ts en esta misma feature.
  *
  * El parámetro `search` se acepta pero no se aplica en este stub; el ejemplo
  * sigue ilustrando cómo el valor debounced se conecta al hook de datos.

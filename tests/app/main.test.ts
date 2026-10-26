@@ -16,10 +16,10 @@ function setReadyState(state: DocumentReadyState) {
 }
 
 async function importMain() {
-  await import('../src/main');
+  await import('@/app/main');
 }
 
-describe('montaje en src/main.tsx', () => {
+describe('montaje en src/app/main.tsx', () => {
   beforeEach(() => {
     vi.resetModules();
     createRoot.mockClear();

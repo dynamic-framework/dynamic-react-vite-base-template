@@ -1,6 +1,23 @@
 {
   "title": "Bienvenido al template de widget Modyo",
   "siteLang": "Este sitio está en: {lang}",
+  "home": {
+    "getStarted": "Empieza editando",
+    "links": {
+      "learn": {
+        "title": "Aprende",
+        "description": "¡Empieza con Dynamic Framework!"
+      },
+      "themes": {
+        "title": "Temas",
+        "description": "Aprende a crear una apariencia propia."
+      },
+      "components": {
+        "title": "Componentes",
+        "description": "Explora los componentes, construidos íntegramente en React."
+      }
+    }
+  },
   "states": {
     "loading": "Cargando...",
     "empty": {

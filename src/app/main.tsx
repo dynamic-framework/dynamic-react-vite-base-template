@@ -2,12 +2,12 @@ import { DContextProvider } from '@dynamic-framework/ui-react';
 import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 
-import './config/i18nConfig';
+import '@/config/i18nConfig';
 
 import App from './App';
-import { resolveMountTargets } from './utils/mountTargets';
+import { resolveMountTargets } from './mountTargets';
 
-import './styles/base.scss';
+import '@/styles/base.scss';
 
 const WIDGET_NAME = 'widgetName';
 

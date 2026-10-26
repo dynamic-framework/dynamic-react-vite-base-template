@@ -15,12 +15,8 @@
  *
  * Pasado a DDataStateWrapper vía renderLoading.
  *
- * Las variantes skeleton son aporte propio sin issue upstream — no hay
- * request abierto pidiendo skeletons en el framework. Si en el futuro se
- * agregan, considerar simplificar este archivo.
- *
- * Re-export upstream pendiente:
- *   https://github.com/dynamic-framework/dynamic-ui/issues/1049
+ * Si el framework incorpora variantes skeleton, este archivo se puede
+ * simplificar.
  */
 import { DCard } from '@dynamic-framework/ui-react';
 import { useTranslation } from 'react-i18next';

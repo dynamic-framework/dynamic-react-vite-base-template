@@ -3,9 +3,9 @@
  *
  * Mocks use DOMAIN types (post-mapper), not API types, and are returned by the
  * repository when `widgetConfig.useMocks` (vars.use-mocks) is true. Copy this
- * file to `src/services/mocks/<entityName>.ts` and rename for your own domain.
+ * file to `src/features/<name>/api/<name>.mock.ts` and rename for your own domain.
  */
-import type { Entity } from '../../types';
+import type { Entity } from '../model/entity';
 
 export const mockEntities: Entity[] = [
   {

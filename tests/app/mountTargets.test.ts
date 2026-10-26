@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { resolveMountTargets } from '../../src/utils/mountTargets';
+import { resolveMountTargets } from '@/app/mountTargets';
 
 describe('resolveMountTargets', () => {
   afterEach(() => {

@@ -14,7 +14,7 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '../..');
 
 const indexHtml = readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 

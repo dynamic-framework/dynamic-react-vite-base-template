@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_LANGUAGE, resolveSiteLanguage } from '../../src/config/widgetConfig';
+import { DEFAULT_LANGUAGE, resolveSiteLanguage } from '@/config/widgetConfig';
 
 describe('resolveSiteLanguage', () => {
   it('el idioma por defecto es es', () => {

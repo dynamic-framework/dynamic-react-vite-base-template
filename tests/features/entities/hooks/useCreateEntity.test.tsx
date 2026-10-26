@@ -3,7 +3,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, it, expect } from 'vitest';
 
-import { useEntities, useCreateEntity } from '../../src/hooks/useEntities';
+import { useEntities, useCreateEntity } from '@/features/entities/hooks/useEntities';
 
 function createWrapper() {
   const queryClient = new QueryClient({

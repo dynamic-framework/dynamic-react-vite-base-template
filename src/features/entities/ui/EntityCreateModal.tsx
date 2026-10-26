@@ -4,21 +4,16 @@
  *
  * Recibe el payload del openPortal vía `PortalProps<Payload>` y dispara el
  * cierre con `closePortal()` del context — NO con un onClose prop pasado a
- * DModal (DModal no acepta isOpen/onClose; ver el reporte de Fase A).
+ * DModal (DModal no acepta isOpen/onClose).
  *
  * El botón X del header sí usa onClose, pero es el onClose de DModal.Header,
  * no de DModal. Se conecta al mismo closePortal.
  *
  * Para usar en un widget real:
- *   1. Copiar este archivo a src/components/ (no a _examples/).
+ *   1. Copiar este archivo a la carpeta ui/ de tu feature.
  *   2. Reemplazar el body placeholder con el form real.
  *   3. Registrar el componente en availablePortals del DContextProvider de
- *      tu main.tsx.
- *
- * Issues upstream que matizan este patrón:
- *   - https://github.com/dynamic-framework/dynamic-ui/issues/1052
- *     (story de Storybook con openPortal — habría evitado la confusión
- *     que motivó esta reescritura)
+ *      src/app/main.tsx.
  */
 import type { PortalProps } from '@dynamic-framework/ui-react';
 import { DButton, DModal, useDPortalContext } from '@dynamic-framework/ui-react';

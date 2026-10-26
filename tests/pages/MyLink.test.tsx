@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import MyLink from '../../src/components/MyLink';
+import MyLink from '@/pages/MyLink';
 
 vi.mock('@dynamic-framework/ui-react', async () => {
     const originalModule = await vi.importActual<object>('@dynamic-framework/ui-react');

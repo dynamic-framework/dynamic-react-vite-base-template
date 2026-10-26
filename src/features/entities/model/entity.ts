@@ -1,9 +1,8 @@
 /**
- * Tipos centralizados del widget.
+ * Tipos de dominio de la feature entities.
  *
  * Convenciones:
  * - Entity: Tipo de dominio (usado en componentes)
- * - ApiEntity: Tipo de respuesta de API (usado solo en repositories)
  * - CreateEntityData: Payload para crear
  * - UpdateEntityData: Payload para actualizar (campos opcionales)
  */
@@ -17,17 +16,6 @@ export interface Entity {
   name: string;
   createdAt: string;
   updatedAt?: string;
-}
-
-// ============================================
-// API TYPES
-// ============================================
-
-export interface ApiEntity {
-  id: string;
-  name: string;
-  created_at: string;
-  updated_at?: string;
 }
 
 // ============================================

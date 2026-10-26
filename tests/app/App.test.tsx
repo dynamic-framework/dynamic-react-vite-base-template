@@ -2,8 +2,8 @@ import * as DynamicFramework from '@dynamic-framework/ui-react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
-import App from '../src/App';
-import { CONTEXT_CONFIG } from '../src/config/widgetConfig';
+import App from '@/app/App';
+import { CONTEXT_CONFIG } from '@/config/widgetConfig';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -37,8 +37,8 @@ describe('<App />', () => {
     });
   });
 
-  it('should render MyComponent', () => {
+  it('should render HomePage', () => {
     render(<App />);
-    expect(screen.getByText('Get started by editing')).toBeInTheDocument();
+    expect(screen.getByText('home.getStarted')).toBeInTheDocument();
   });
 });

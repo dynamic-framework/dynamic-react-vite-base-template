@@ -4,16 +4,7 @@
  * Reimplementa el markup de ErrorState upstream agregando soporte de
  * react-i18next. Nota importante sobre el icono: NO se pasa `icon` explícito
  * a DAlert — el icono lo deriva DAlert automáticamente desde el `color` vía
- * DContext.iconMap. Este es el patrón canónico del framework (confirmado en
- * el reporte de reconocimiento upstream, sección 4).
- *
- * Será removido cuando cualquiera de estos issues upstream se resuelva:
- *   - i18n nativo en defaults internos:
- *     https://github.com/dynamic-framework/dynamic-ui/issues/1050
- *   - Customización de mensajes vía props del wrapper:
- *     https://github.com/dynamic-framework/dynamic-ui/issues/1048
- *   - Re-export del ErrorState upstream:
- *     https://github.com/dynamic-framework/dynamic-ui/issues/1049
+ * DContext.iconMap. Este es el patrón canónico del framework.
  */
 import { DAlert, DButton } from '@dynamic-framework/ui-react';
 import { useTranslation } from 'react-i18next';

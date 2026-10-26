@@ -25,7 +25,12 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
   },
   "include": [
     "src",
@@ -33,7 +38,6 @@
     "tests/setup.ts"
   ],
   "exclude": [
-    "src/modyo-preview-entry.ts",
-    "src/_examples/**"
+    "src/app/modyo-preview-entry.ts"
   ]
 }

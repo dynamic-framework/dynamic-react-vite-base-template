@@ -1,7 +1,7 @@
 import { configureI18n } from '@dynamic-framework/ui-react';
 
-import en from '../locales/en.json';
-import es from '../locales/es.json';
+import en from '@/locales/en.json';
+import es from '@/locales/es.json';
 
 import { DEFAULT_LANGUAGE, SITE_LANG } from './widgetConfig';
 

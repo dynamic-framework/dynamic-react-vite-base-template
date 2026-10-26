@@ -9,7 +9,7 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '../..');
 const SRC = path.join(ROOT, 'src');
 const EXTENSIONS = ['.ts', '.tsx', '.css', '.scss'];
 
@@ -211,7 +211,7 @@ function findViolations(check: Check): string[] {
 describe('frontera de estilos en src/', () => {
   it('recorre los archivos de src/', () => {
     expect(files.length).toBeGreaterThan(10);
-    expect(files.some(({ file }) => file === path.join('src', 'main.tsx'))).toBe(true);
+    expect(files.some(({ file }) => file === path.join('src', 'app', 'main.tsx'))).toBe(true);
   });
 
   it.each(CHECKS)('src/ no contiene $name', (check) => {

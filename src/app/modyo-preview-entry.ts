@@ -4,7 +4,7 @@
  * Los módulos /@react-refresh y /@vite/client solo existen en el dev server.
  *
  * Uso:
- *   modyo-cli preview --module --entry-js src/modyo-preview-entry.ts --port 5173 ...
+ *   modyo-cli preview --module --entry-js src/app/modyo-preview-entry.ts --port 5173 ...
  */
 
 // 1. React Fast Refresh preamble (debe ejecutarse antes de cualquier componente React)

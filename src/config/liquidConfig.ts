@@ -1,6 +1,6 @@
 import { Liquid } from 'liquidjs';
 
-import liquidParser from '../utils/liquidParser';
+import liquidParser from '@/shared/lib/liquidParser';
 
 import liquidConfig from './liquid.json';
 

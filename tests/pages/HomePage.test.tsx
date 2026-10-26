@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import MyComponent from '../../src/components/MyComponent';
+import HomePage from '@/pages/HomePage';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -12,19 +12,19 @@ vi.mock('react-i18next', () => ({
 }));
 
 // Mock widgetConfig to control SITE_LANG in tests
-vi.mock('../../src/config/widgetConfig', () => ({
+vi.mock('@/config/widgetConfig', () => ({
   SITE_LANG: 'en',
 }));
 
-describe('<MyComponent />', () => {
+describe('<HomePage />', () => {
   it('should render the title and initial content', () => {
-    render(<MyComponent />);
+    render(<HomePage />);
     expect(screen.getByText('title')).toBeInTheDocument();
-    expect(screen.getByText(/Get started by editing/)).toBeInTheDocument();
+    expect(screen.getByText('home.getStarted')).toBeInTheDocument();
   });
 
   it('should render the site language label with the correct interpolation params', () => {
-    render(<MyComponent />);
+    render(<HomePage />);
     expect(screen.getByText('siteLang {"lang":"en"}')).toBeInTheDocument();
   });
 });
