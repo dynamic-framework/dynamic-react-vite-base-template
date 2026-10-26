@@ -44,18 +44,53 @@ interface Check {
   pattern: RegExp;
   ignoreComments: boolean;
   hint: string;
-  /** Si se indica, la comprobación solo recorre archivos con estas extensiones. */
-  extensions?: string[];
+  /**
+   * Si es true, el patrón solo se busca dentro de los objetos de estilo de los
+   * archivos TS/TSX. En CSS y SCSS esas propiedades las controla Stylelint.
+   */
+  styleObjectsOnly?: boolean;
   /** Si se indica, descarta las coincidencias para las que devuelve true. */
   allow?: (match: RegExpMatchArray) => boolean;
 }
 
+/** Apertura de un objeto de estilo: `style={{`, `style={ {` o `CSSProperties = {`. */
+const STYLE_OBJECT_START = /style\s*=\s*\{\s*\{|CSSProperties\s*=\s*\{/g;
+
 /**
- * Clave (con o sin comillas) de un objeto de estilo de TS/TSX:
- * `style={{ ... }}` o un objeto tipado como CSSProperties.
+ * Rangos [inicio, fin) del contenido de cada objeto de estilo. El cierre se
+ * busca contando llaves fuera de los strings, así que una interpolación ${…},
+ * una expresión o un objeto anidados no cortan el objeto.
  */
+function styleObjectRanges(text: string): Array<[number, number]> {
+  return [...text.matchAll(STYLE_OBJECT_START)].map((match) => {
+    const start = (match.index ?? 0) + match[0].length;
+    let depth = 1;
+    let quote = '';
+    let end = start;
+    while (end < text.length && depth > 0) {
+      const char = text[end];
+      if (quote) {
+        if (char === '\\') {
+          end += 1;
+        } else if (char === quote) {
+          quote = '';
+        }
+      } else if (char === '"' || char === "'") {
+        quote = char;
+      } else if (char === '{') {
+        depth += 1;
+      } else if (char === '}') {
+        depth -= 1;
+      }
+      end += 1;
+    }
+    return [start, end - 1];
+  });
+}
+
+/** Clave de un objeto de estilo, con o sin comillas. */
 function styleKey(keys: string): string {
-  return String.raw`(?<=(?:style=\{\{|CSSProperties\s*=\s*\{)[^{}]*)(?<![\w-])(["']?)(?:${keys})\1\s*:`;
+  return String.raw`(?<![\w-])(["']?)(?:${keys})\1\s*:`;
 }
 
 /** Medidas y palabras clave sin color de border, outline y las sombras. */
@@ -99,7 +134,7 @@ const CHECKS: Check[] = [
     ),
     ignoreComments: true,
     hint: "usa var(--bs-*) de Dynamic, por ejemplo color: 'var(--bs-body-color)'",
-    extensions: ['.ts', '.tsx'],
+    styleObjectsOnly: true,
   },
   {
     // Los shorthands que llevan color (border, outline, sombras) solo admiten
@@ -112,15 +147,21 @@ const CHECKS: Check[] = [
     ),
     ignoreComments: true,
     hint: "el color va con var(--bs-*), por ejemplo border: '1px solid var(--bs-border-color)'",
-    extensions: ['.ts', '.tsx'],
+    styleObjectsOnly: true,
     allow: (match) => isTokenShorthand(match[2].trim()),
   },
   {
-    // font-family en cualquier archivo; el shorthand font, en objetos de estilo.
-    name: 'font-family ni font',
-    pattern: new RegExp(`font-?[Ff]amily["']?\\s*[:=]|${styleKey('font')}`, 'g'),
+    name: 'font-family',
+    pattern: /font-?[Ff]amily["']?\s*[:=]/g,
     ignoreComments: false,
     hint: 'la tipografía viene del theme; usa las clases fs-* y fw-* de Dynamic',
+  },
+  {
+    name: 'font en objetos de estilo',
+    pattern: new RegExp(styleKey('font'), 'g'),
+    ignoreComments: true,
+    hint: 'la tipografía viene del theme; usa las clases fs-* y fw-* de Dynamic',
+    styleObjectsOnly: true,
   },
   {
     name: 'border-radius',
@@ -147,19 +188,24 @@ const CHECKS: Check[] = [
   },
 ];
 
-function findViolations({
-  pattern, ignoreComments, extensions, allow,
-}: Check): string[] {
-  return files.flatMap(({ file, source }) => {
-    if (extensions && !extensions.some((ext) => file.endsWith(ext))) {
-      return [];
-    }
-    const text = ignoreComments ? stripComments(source) : source;
-    return [...text.matchAll(pattern)].filter((match) => !allow?.(match)).map((match) => {
-      const line = text.slice(0, match.index).split('\n').length;
-      return `${file}:${line}  ${match[0]}`;
-    });
-  });
+/** Hallazgos de una comprobación en un texto, como `línea  coincidencia`. */
+function findInSource({
+  pattern, ignoreComments, styleObjectsOnly, allow,
+}: Check, source: string): string[] {
+  const text = ignoreComments ? stripComments(source) : source;
+  const ranges = styleObjectsOnly ? styleObjectRanges(text) : [[0, text.length]];
+  return ranges.flatMap(([start, end]) => [...text.slice(start, end).matchAll(pattern)]
+    .filter((match) => !allow?.(match))
+    .map((match) => {
+      const line = text.slice(0, start + (match.index ?? 0)).split('\n').length;
+      return `${line}  ${match[0]}`;
+    }));
+}
+
+function findViolations(check: Check): string[] {
+  return files
+    .filter(({ file }) => !check.styleObjectsOnly || /\.tsx?$/.test(file))
+    .flatMap(({ file, source }) => findInSource(check, source).map((found) => `${file}:${found}`));
 }
 
 describe('frontera de estilos en src/', () => {
@@ -173,5 +219,63 @@ describe('frontera de estilos en src/', () => {
       findViolations(check),
       `src/ no puede contener ${check.name}: ${check.hint}.`,
     ).toEqual([]);
+  });
+});
+
+/** Nombres de las comprobaciones que fallan con un fragmento de código. */
+function failingChecks(source: string): string[] {
+  return CHECKS.filter((check) => findInSource(check, source).length > 0).map(({ name }) => name);
+}
+
+const COLOR = 'colores fuera de var(--…) en objetos de estilo';
+const SHORTHAND = 'colores en shorthands de objetos de estilo';
+const FONT = 'font en objetos de estilo';
+
+describe('detección de objetos de estilo', () => {
+  it.each([
+    {
+      caso: 'propiedades después de una interpolación',
+      source: "<div style={{ width: `${width}px`, color: 'red', font: '16px Arial' }} />",
+      expected: [COLOR, FONT],
+    },
+    {
+      caso: 'propiedades después de una expresión anidada',
+      source: "<div style={{ ...(open ? { opacity: 1 } : {}), border: '1px solid red' }} />",
+      expected: [SHORTHAND],
+    },
+    {
+      caso: 'espacios entre las llaves',
+      source: "<div style={ { color: 'red' } } />",
+      expected: [COLOR],
+    },
+    {
+      caso: 'CSSProperties con una interpolación previa',
+      source: "const box: CSSProperties = { padding: `${gap}px`, background: 'white' };",
+      expected: [COLOR],
+    },
+    {
+      caso: 'valores con var(--…) después de una interpolación',
+      source: "<div style={ { width: `${width}px`, color: 'var(--bs-body-color)', border: `${w}px solid var(--bs-border-color)` } } />",
+      expected: [],
+    },
+    {
+      caso: 'un objeto que no es de estilo',
+      source: "const options = { color: 'red', font: 'Arial' };",
+      expected: [],
+    },
+    {
+      caso: 'texto después de cerrar el objeto de estilo',
+      source: "<p style={{ width: `${width}px` }}>color: red</p>",
+      expected: [],
+    },
+  ])('$caso', ({ source, expected }) => {
+    expect(failingChecks(source)).toEqual(expected);
+  });
+
+  it('indica la línea de una propiedad en un objeto de varias líneas', () => {
+    const source = "<div\n  style={{\n    width: `${width}px`,\n    color: 'red',\n  }}\n/>";
+    const check = CHECKS.find(({ name }) => name === COLOR);
+
+    expect(check && findInSource(check, source)).toEqual(["4  color: 'red'"]);
   });
 });
