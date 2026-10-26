@@ -28,7 +28,7 @@ npm install react-router
 
 ## 2. Variable (solo `BrowserRouter`)
 
-`basename` es la ruta de la página donde vive el widget, sin barra final: `/mi-sitio/cuentas`. Defínela en Modyo como variable del sitio (`router-basename`) y añade su bloque en `src/config/widgetConfig.ts`, en cualquier punto del archivo:
+`basename` es la ruta de la página donde vive el widget, sin barra final: `/mi-sitio/cuentas`. Defínela en Modyo como variable del sitio (`router-basename`) y añade su bloque en `src/config/widgetConfig.ts`, en cualquier punto debajo de la sección «Registro de obligatorias»:
 
 ```ts
 // ─── Módulo: router ──────────────────────────────────────────────────────

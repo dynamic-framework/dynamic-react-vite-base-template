@@ -10,7 +10,7 @@ npm install @modyo/sdk
 
 ## 2. Variables
 
-Defínelas en Modyo como variables del sitio y añade su bloque en `src/config/widgetConfig.ts`, en cualquier punto del archivo:
+Defínelas en Modyo como variables del sitio y añade su bloque en `src/config/widgetConfig.ts`, en cualquier punto debajo de la sección «Registro de obligatorias»:
 
 ```ts
 // ─── Módulo: Modyo Content ───────────────────────────────────────────────

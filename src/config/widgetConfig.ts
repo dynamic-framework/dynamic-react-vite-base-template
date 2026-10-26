@@ -118,7 +118,8 @@ export const widgetConfig = {
 // ─── Consulta ────────────────────────────────────────────────────────────
 //
 // Funciones y no constantes: se evalúan cuando se llaman, así que un bloque
-// pegado en cualquier punto del archivo ya está registrado.
+// pegado en cualquier punto debajo del registro ya está registrado. Encima del
+// registro, requiredVariables aún no existe y el módulo falla al cargar.
 
 export function getRequiredVariables(): readonly RequiredVariable[] {
   return [...requiredVariables];
