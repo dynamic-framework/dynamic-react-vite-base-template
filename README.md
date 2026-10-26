@@ -65,14 +65,18 @@ npm run dev
 
 `widget.manifest.json`, en la raíz, describe el widget fuera del código. Un test (`tests/config/widgetManifest.test.ts`) lo mantiene coherente con `package.json`.
 
+Ejemplo de un widget creado desde el template:
+
 ```json
 {
-  "name": "@dynamic-framework/dynamic-react-vite-base-template",
-  "version": "1.3.0",
-  "dynamicUi": "2.12.0",
-  "template": "@dynamic-framework/dynamic-react-vite-base-template@1.3.0",
+  "name": "my-widget",
+  "version": "0.1.0",
+  "dynamicUi": "<versión exacta de @dynamic-framework/ui-react>",
+  "template": "@dynamic-framework/dynamic-react-vite-base-template@<versión del template>",
   "theme": null,
-  "design": []
+  "design": [
+    { "name": "Pantalla principal", "url": "https://www.figma.com/design/..." }
+  ]
 }
 ```
 
