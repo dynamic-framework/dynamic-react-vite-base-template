@@ -343,9 +343,8 @@ describe('loadCoreIcons — nucleo y respaldo', () => {
     hook(plugin, 'configResolved').call(null, { root: ROOT });
     await hook(plugin, 'buildStart').call(ctx);
 
-    // Con 2.8.0/2.9.0 el nucleo sale del respaldo y hay aviso; a partir de
-    // 2.10 sale del paquete y no debe haberlo. El test se ata a coreSource,
-    // no a la version instalada.
+    // El aviso depende de si ui-react publica dist/icons-core.json. El test se
+    // ata a coreSource, no a la version instalada.
     const coreSource = loadCoreIcons(resolveUiReactDir(ROOT)).source;
     const aviso = warnings.some((w) => w.includes('lista de respaldo del nucleo'));
     expect(aviso).toBe(coreSource === 'fallback');
@@ -613,8 +612,8 @@ describe('manifest', () => {
   });
 
   it('no avisa de nombres omitidos cuando include solo trae blancos', async () => {
-    // Antes estas entradas llegaban a unknownIncluded y el aviso se renderizaba
-    // como una coma sin nada delante: `... y se omiten: ,    `.
+    // Sin normalizar, estas entradas llegarian a unknownIncluded y el aviso
+    // seria una coma sin nada delante: `... y se omiten: ,    `.
     const plugin = lucideSubset({ include: ['', '   '], manifestFile });
     const { ctx, warnings } = makeContext();
     hook(plugin, 'configResolved').call(null, { root: ROOT });
