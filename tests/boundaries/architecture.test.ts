@@ -33,6 +33,12 @@ const FORBIDDEN: Array<[string, string, string]> = [
     "import { useX } from '../features/sample/hooks/useX';"],
   ['app importa un mock', 'src/app/X.tsx',
     "import { mockX } from '@/features/sample/api/x.mock';"],
+  ['app usa la red', 'src/app/X.tsx',
+    "import { api } from '@/shared/http/client';"],
+  ['pages usa la red', 'src/pages/X.tsx',
+    "import { api } from '@/shared/http/client';"],
+  ['pages importa app', 'src/pages/X.tsx',
+    "import App from '@/app/App';"],
 
   // shared/ y config/
   ['shared importa una feature', 'src/shared/http/X.ts',
@@ -53,6 +59,8 @@ const FORBIDDEN: Array<[string, string, string]> = [
     "export { mockX } from './api/x.mock';"],
   ['index.ts importa app', 'src/features/sample/index.ts',
     "export { default } from '@/app/App';"],
+  ['index.ts expone api', 'src/features/sample/index.ts',
+    "export { getSample } from './api/SampleRepository';"],
 
   // Entre features y hacia fuera
   ['una feature entra a otra por ruta relativa', 'src/features/sample/hooks/X.ts',
@@ -61,6 +69,10 @@ const FORBIDDEN: Array<[string, string, string]> = [
     "import { YView } from '@/features/other/ui/YView';"],
   ['una feature importa una página', 'src/features/sample/ui/X.tsx',
     "import HomePage from '@/pages/HomePage';"],
+  ['una ruta relativa da un rodeo hacia otra capa', 'src/features/sample/api/X.ts',
+    "import { SampleView } from '../api/../ui/SampleView';"],
+  ['una ruta relativa sale de la feature con un rodeo', 'src/features/sample/ui/X.tsx',
+    "import { getY } from './../../other/api/YRepository';"],
 
   // api/
   ['api importa hooks', 'src/features/sample/api/X.ts',
@@ -79,6 +91,10 @@ const FORBIDDEN: Array<[string, string, string]> = [
     "import { USE_MOCKS } from '@/config/widgetConfig';"],
   ['model usa TanStack Query', 'src/features/sample/model/X.ts',
     "import { useQuery } from '@tanstack/react-query';"],
+  ['model usa React', 'src/features/sample/model/X.ts',
+    "import { useState } from 'react';"],
+  ['model usa shared/ui', 'src/features/sample/model/X.ts',
+    "import { LoadingState } from '@/shared/ui';"],
   ['model importa un mock', 'src/features/sample/model/X.ts',
     "import { mockSample } from '../api/sample.mock';"],
 
@@ -116,8 +132,10 @@ const ALLOWED: Array<[string, string, string]> = [
     "import HomePage from '@/pages/HomePage';\nimport { ErrorBoundary } from '@/shared/ui';\nimport { SITE_LANG } from '@/config/widgetConfig';"],
   ['una feature usa otra por su index', 'src/features/sample/ui/X.tsx',
     "import { useOther } from '@/features/other';"],
-  ['index.ts reexporta sus capas', 'src/features/sample/index.ts',
-    "export { useSample } from './hooks/useSample';\nexport type { Sample } from './model/sample';"],
+  ['index.ts reexporta sus capas y tipos de api', 'src/features/sample/index.ts',
+    "export { useSample } from './hooks/useSample';\nexport type { Sample } from './model/sample';\nexport type { ApiSample } from './api/sample.dto';"],
+  ['app carga una feature con import() por su index', 'src/app/X.tsx',
+    "export const load = () => import('@/features/sample');"],
   ['api lee su mock, su dto, el modelo, la red y la configuración', 'src/features/sample/api/X.ts',
     "import { mockSample } from './sample.mock';\nimport type { ApiSample } from './sample.dto';\nimport type { Sample } from '../model/sample';\nimport { api } from '@/shared/http/client';\nimport { USE_MOCKS } from '@/config/widgetConfig';"],
   ['model importa un tipo de api', 'src/features/sample/model/X.ts',
@@ -180,6 +198,17 @@ describe('grafo de importaciones (eslint.config.js)', () => {
       .filter((m) => m.ruleId === RULE)
       .map((m) => `${path.relative(ROOT, result.filePath)}:${m.line} ${m.message}`));
     expect(found).toEqual([]);
+  });
+});
+
+describe('import() dinámico (eslint.config.js)', () => {
+  it('rechaza entrar a las carpetas de una feature con import()', async () => {
+    const messages = await messagesFor(
+      'src/app/X.tsx',
+      "export const load = () => import('@/features/sample/api/SampleRepository');",
+      'no-restricted-syntax',
+    );
+    expect(messages).not.toEqual([]);
   });
 });
 

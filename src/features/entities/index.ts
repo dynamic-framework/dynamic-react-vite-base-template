@@ -1,4 +1,4 @@
-export { entityKeys, useCreateEntity, useEntities } from './hooks/useEntities';
+export { useCreateEntity, useEntities } from './hooks/useEntities';
 export type {
   CreateEntityData,
   Entity,

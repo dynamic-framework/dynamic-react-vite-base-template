@@ -69,7 +69,7 @@ El código se organiza por dominio: cada dominio es una feature con todas sus ca
 │   │   └── lib/             # Utilidades (liquidParser, errorHandler)
 │   ├── locales/             # Traducciones (es.json, en.json)
 │   └── styles/              # SCSS propio del widget
-├── tests/                   # Espejo de src/, más tests/boundaries/
+├── tests/                   # Espejo de src/, más boundaries/ y vite-plugins/
 ├── index.html               # Página de desarrollo
 ├── vite.config.ts           # Configuración de Vite y Vitest
 └── eslint.config.js         # Linting y grafo de importaciones
@@ -81,19 +81,21 @@ Todo lo que está bajo `src/` se importa con el alias `@/` (por ejemplo, `@/shar
 
 ```
 app ──▶ pages ──▶ features/<x>/index.ts
- │                     │
- └──────────┬──────────┘
-            ▼
-     shared ──▶ config
+ │        │              │
+ └────────┴──────┬───────┘
+                 ▼
+          shared ◀──▶ config      (sin importar features, app ni pages)
 
 Dentro de una feature:  ui ──▶ hooks ──▶ (service) ──▶ api
                          └────────┴──────────┴─────────▶ model
 ```
 
-- `app/` y `pages/` usan una feature solo por su `index.ts` (`@/features/<nombre>`), nunca sus carpetas internas.
-- `shared/` y `config/` no importan features, `app/` ni `pages/`.
+- `app/` y `pages/` usan una feature solo por su `index.ts` (`@/features/<nombre>`), nunca sus carpetas internas, ni siquiera con `import()`. `pages/` no importa `app/`.
+- Todas las áreas pueden usar `shared/` y `config/`. Entre ellas, `config/` usa `shared/lib/` (por ejemplo, `liquidParser`) y `shared/http/` lee `config/`; ninguna de las dos importa features, `app/` ni `pages/`.
+- La red (`shared/http/`) solo se usa desde la capa `api/` de una feature. El `index.ts` de una feature expone `hooks/`, `model/` y `ui/`; de `api/` y `service/`, solo tipos.
 - Una feature no entra en otra por dentro: la usa por su `index.ts`. Tampoco importa `app/` ni `pages/`.
-- Dentro de la feature, `ui/` usa `hooks/`; `hooks/` usa `api/` (o `service/`, si existe); `model/` es puro y de las demás capas solo recibe `import type`. `ui/` puede importar tipos de `api/` con `import type`.
+- Dentro de la feature, `ui/` usa `hooks/`; `hooks/` usa `api/` (o `service/`, si existe); `model/` es puro (sin React, red, configuración ni UI) y de las demás capas solo recibe `import type`. `ui/` puede importar tipos de `api/` con `import type`. Entre capas, las rutas relativas son directas (`../hooks/useX`), sin `..` intermedios.
+- Dentro de una feature, sus capas se importan entre sí por ruta relativa, no por su propio `index.ts`.
 - Los mocks (`*.mock.ts`) solo los importa `api/`, que decide con `USE_MOCKS` (`vars.use-mocks`) si devuelve datos de prueba o llama a la red.
 
 ESLint aplica el grafo (`@typescript-eslint/no-restricted-imports`, en `eslint.config.js`) y cada error dice qué importar en su lugar. `tests/boundaries/architecture.test.ts` comprueba que cada regla sigue aplicando a la ruta de su capa y que todo archivo de `src/` cae bajo alguna; si se renombra una carpeta sin actualizar `eslint.config.js`, el test falla.

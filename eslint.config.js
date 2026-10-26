@@ -46,6 +46,15 @@ const DOMAIN = {
   message: 'src/shared/ y src/config/ no importan features, app ni pages: lo que necesiten va en src/shared/.',
 };
 
+/**
+ * Un `..` después del primer segmento (`../api/../ui/x`, `./../x`) esquiva las
+ * reglas de capa: las rutas relativas van sin vueltas.
+ */
+const WINDING_PATH = {
+  regex: '^\\./\\.\\.|/\\.\\./',
+  message: 'Escribe la ruta relativa sin `..` intermedios: ../<capa>/<archivo>, o @/ para salir de la feature.',
+};
+
 /** Las capas de una feature, para prohibir el acceso entre ellas. */
 const layerImports = (...layers) => layers.flatMap((name) => [`../${name}`, `../${name}/**`]);
 
@@ -68,14 +77,26 @@ function restrict(files, patterns) {
  */
 function architectureRules() {
   const layer = (name) => [`src/features/*/${name}/**/*.{ts,tsx}`];
-  const featureBase = [FEATURE_INTERNALS, APP_AND_PAGES, OUTSIDE_FEATURE];
+  const featureBase = [FEATURE_INTERNALS, APP_AND_PAGES, OUTSIDE_FEATURE, WINDING_PATH];
+  const networkOutsideApi = {
+    group: NETWORK,
+    message: 'La red se usa desde la capa api/ de una feature; aquí entra por sus hooks.',
+  };
 
   return [
-    // app/ arranca y pages/ compone: usan cada feature por su index.ts.
-    restrict(
-      ['src/app/**/*.{ts,tsx}', 'src/pages/**/*.{ts,tsx}'],
-      [FEATURE_INTERNALS, MOCKS],
-    ),
+    // app/ arranca: usa cada feature por su index.ts.
+    restrict(['src/app/**/*.{ts,tsx}'], [FEATURE_INTERNALS, MOCKS, networkOutsideApi]),
+
+    // pages/ compone features por su index.ts y no conoce el arranque.
+    restrict(['src/pages/**/*.{ts,tsx}'], [
+      FEATURE_INTERNALS,
+      MOCKS,
+      networkOutsideApi,
+      {
+        group: ['@/app', '@/app/**', '**/app/**'],
+        message: 'pages/ no importa src/app/: es app/ quien monta las páginas.',
+      },
+    ]),
 
     // Lo transversal no depende del dominio.
     restrict(
@@ -91,6 +112,11 @@ function architectureRules() {
       {
         regex: '^\\.\\./',
         message: 'index.ts reexporta las capas de su propia feature: lo de fuera se importa con @/.',
+      },
+      {
+        group: ['./api', './api/**', './service', './service/**'],
+        allowTypeImports: true,
+        message: 'index.ts expone hooks/, model/ y ui/; de api/ y service/ solo tipos, para que la red se use por los hooks.',
       },
     ]),
 
@@ -112,7 +138,9 @@ function architectureRules() {
           ...layerImports('api', 'hooks', 'service', 'ui'),
           ...NETWORK,
           '@/config', '@/config/**',
-          '@tanstack/*', 'axios', 'react', 'react-dom',
+          '@/shared/ui', '@/shared/ui/**', '@/shared/hooks', '@/shared/hooks/**',
+          '@dynamic-framework/ui-react', '@tanstack/*', 'axios',
+          'react', 'react-dom', 'react-i18next',
         ],
         allowTypeImports: true,
         message: 'model/ es puro: solo tipos y funciones sin efectos. De otras capas entra únicamente import type.',
@@ -170,14 +198,18 @@ export default defineConfig([
 
   ...architectureRules(),
 
-  // El texto visible sale de i18n; equivale a react/jsx-no-literals sobre los
-  // nodos JSXText.
+  // El texto visible sale de i18n (equivale a react/jsx-no-literals sobre los
+  // nodos JSXText), y los import() dinámicos respetan la puerta de cada
+  // feature, que no-restricted-imports no revisa.
   {
-    files: ['src/**/*.tsx'],
+    files: ['src/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-syntax': ['error', {
         selector: 'JSXText[value=/[^\\s]/]',
         message: 'El texto visible sale de t(\'...\'), con sus llaves en src/locales/*.json.',
+      }, {
+        selector: 'ImportExpression[source.value=/(^@\\/|\\/)features\\/[^/]+\\//]',
+        message: 'Una feature se importa por su index.ts, también con import(): @/features/<nombre>.',
       }],
     },
   },
