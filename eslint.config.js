@@ -1,3 +1,5 @@
+import { readdirSync } from 'node:fs';
+
 import js from '@eslint/js';
 import globals from 'globals';
 import jsonc from 'eslint-plugin-jsonc';
@@ -55,10 +57,19 @@ const WINDING_PATH = {
   message: 'Escribe la ruta relativa sin `..` intermedios: ../<capa>/<archivo>, o @/ para salir de la feature.',
 };
 
+/**
+ * Una capa no importa la puerta de su propia feature: crearía un ciclo
+ * index.ts ↔ capa. La forma con alias se cubre en ownFeatureRules().
+ */
+const OWN_ENTRY = {
+  regex: '^\\.\\.(/(index(\\.tsx?)?)?)?$',
+  message: 'Dentro de la feature, importa la capa directamente (../hooks/useX), no su index.ts.',
+};
+
 /** Las capas de una feature, para prohibir el acceso entre ellas. */
 const layerImports = (...layers) => layers.flatMap((name) => [`../${name}`, `../${name}/**`]);
 
-const NETWORK = ['@/shared/http', '@/shared/http/**'];
+const NETWORK = ['@/shared/http', '@/shared/http/**', '**/shared/http', '**/shared/http/**'];
 
 function restrict(files, patterns) {
   return {
@@ -77,7 +88,7 @@ function restrict(files, patterns) {
  */
 function architectureRules() {
   const layer = (name) => [`src/features/*/${name}/**/*.{ts,tsx}`];
-  const featureBase = [FEATURE_INTERNALS, APP_AND_PAGES, OUTSIDE_FEATURE, WINDING_PATH];
+  const featureBase = [FEATURE_INTERNALS, APP_AND_PAGES, OUTSIDE_FEATURE, WINDING_PATH, OWN_ENTRY];
   const networkOutsideApi = {
     group: NETWORK,
     message: 'La red se usa desde la capa api/ de una feature; aquí entra por sus hooks.',
@@ -109,6 +120,7 @@ function architectureRules() {
       FEATURE_INTERNALS,
       APP_AND_PAGES,
       MOCKS,
+      networkOutsideApi,
       {
         regex: '^\\.\\./',
         message: 'index.ts reexporta las capas de su propia feature: lo de fuera se importa con @/.',
@@ -180,6 +192,28 @@ function architectureRules() {
   ];
 }
 
+/**
+ * La forma con alias de OWN_ENTRY (`@/features/<propia>`) depende del nombre de
+ * cada feature, así que se genera un bloque por carpeta de src/features/. Usa
+ * la regla base no-restricted-imports para no reemplazar los bloques de capa.
+ */
+function ownFeatureRules() {
+  const featuresDir = new URL('./src/features/', import.meta.url);
+  return readdirSync(featuresDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map(({ name }) => ({
+      files: [`src/features/${name}/**/*.{ts,tsx}`],
+      rules: {
+        'no-restricted-imports': ['error', {
+          patterns: [{
+            group: [`@/features/${name}`, `@/features/${name}/**`],
+            message: 'Dentro de la feature, importa la capa por ruta relativa (../hooks/useX), no por @/features/<propia>.',
+          }],
+        }],
+      },
+    }));
+}
+
 export default defineConfig([
   globalIgnores(['dist']),
   {
@@ -197,10 +231,12 @@ export default defineConfig([
   },
 
   ...architectureRules(),
+  ...ownFeatureRules(),
 
   // El texto visible sale de i18n (equivale a react/jsx-no-literals sobre los
-  // nodos JSXText), y los import() dinámicos respetan la puerta de cada
-  // feature, que no-restricted-imports no revisa.
+  // nodos JSXText). import() no se usa en src/: el build es un único main.js
+  // (iife) que lo incrusta igual, y no-restricted-imports no lo revisa, así que
+  // saltaría el grafo.
   {
     files: ['src/**/*.{ts,tsx}'],
     rules: {
@@ -208,9 +244,18 @@ export default defineConfig([
         selector: 'JSXText[value=/[^\\s]/]',
         message: 'El texto visible sale de t(\'...\'), con sus llaves en src/locales/*.json.',
       }, {
-        selector: 'ImportExpression[source.value=/(^@\\/|\\/)features\\/[^/]+\\//]',
-        message: 'Una feature se importa por su index.ts, también con import(): @/features/<nombre>.',
+        selector: 'ImportExpression',
+        message: 'En src/ las importaciones son estáticas: el build es un único main.js y import() saltaría el grafo de importaciones.',
       }],
+    },
+  },
+
+  // Entrada de modyo-cli preview: carga el cliente del servidor de desarrollo
+  // con import().
+  {
+    files: ['src/app/modyo-preview-entry.ts'],
+    rules: {
+      'no-restricted-syntax': 'off',
     },
   },
 

@@ -37,6 +37,8 @@ const FORBIDDEN: Array<[string, string, string]> = [
     "import { api } from '@/shared/http/client';"],
   ['pages usa la red', 'src/pages/X.tsx',
     "import { api } from '@/shared/http/client';"],
+  ['pages usa la red por ruta relativa', 'src/pages/X.tsx',
+    "import { api } from '../shared/http/client';"],
   ['pages importa app', 'src/pages/X.tsx',
     "import App from '@/app/App';"],
 
@@ -61,12 +63,18 @@ const FORBIDDEN: Array<[string, string, string]> = [
     "export { default } from '@/app/App';"],
   ['index.ts expone api', 'src/features/sample/index.ts',
     "export { getSample } from './api/SampleRepository';"],
+  ['index.ts reexporta el cliente HTTP', 'src/features/sample/index.ts',
+    "export { api } from '@/shared/http/client';"],
 
   // Entre features y hacia fuera
   ['una feature entra a otra por ruta relativa', 'src/features/sample/hooks/X.ts',
     "import { mapY } from '../../other/model/y';"],
   ['una feature entra a las carpetas de otra por alias', 'src/features/sample/ui/X.tsx',
     "import { YView } from '@/features/other/ui/YView';"],
+  ['una capa importa el index.ts de su feature con ..', 'src/features/sample/api/X.ts',
+    "import { useSample } from '..';"],
+  ['una capa importa el index.ts de su feature con ../index', 'src/features/sample/api/X.ts',
+    "import { useSample } from '../index';"],
   ['una feature importa una página', 'src/features/sample/ui/X.tsx',
     "import HomePage from '@/pages/HomePage';"],
   ['una ruta relativa da un rodeo hacia otra capa', 'src/features/sample/api/X.ts',
@@ -134,8 +142,6 @@ const ALLOWED: Array<[string, string, string]> = [
     "import { useOther } from '@/features/other';"],
   ['index.ts reexporta sus capas y tipos de api', 'src/features/sample/index.ts',
     "export { useSample } from './hooks/useSample';\nexport type { Sample } from './model/sample';\nexport type { ApiSample } from './api/sample.dto';"],
-  ['app carga una feature con import() por su index', 'src/app/X.tsx',
-    "export const load = () => import('@/features/sample');"],
   ['api lee su mock, su dto, el modelo, la red y la configuración', 'src/features/sample/api/X.ts',
     "import { mockSample } from './sample.mock';\nimport type { ApiSample } from './sample.dto';\nimport type { Sample } from '../model/sample';\nimport { api } from '@/shared/http/client';\nimport { USE_MOCKS } from '@/config/widgetConfig';"],
   ['model importa un tipo de api', 'src/features/sample/model/X.ts',
@@ -201,14 +207,46 @@ describe('grafo de importaciones (eslint.config.js)', () => {
   });
 });
 
-describe('import() dinámico (eslint.config.js)', () => {
-  it('rechaza entrar a las carpetas de una feature con import()', async () => {
+describe('puerta propia de cada feature (eslint.config.js)', () => {
+  it.each(readdirSync(path.join(ROOT, 'src/features')))(
+    'rechaza que %s se importe a sí misma por @/features/<nombre>',
+    async (feature) => {
+      const messages = await messagesFor(
+        `src/features/${feature}/api/X.ts`,
+        `import * as self from '@/features/${feature}';\nvoid self;`,
+        'no-restricted-imports',
+      );
+      expect(messages).not.toEqual([]);
+    },
+  );
+
+  it('permite usar otra feature por su index.ts', async () => {
     const messages = await messagesFor(
-      'src/app/X.tsx',
-      "export const load = () => import('@/features/sample/api/SampleRepository');",
+      'src/features/entities/ui/X.tsx',
+      "import * as other from '@/features/other';\nvoid other;",
+      'no-restricted-imports',
+    );
+    expect(messages).toEqual([]);
+  });
+});
+
+describe('import() dinámico (eslint.config.js)', () => {
+  it.each([
+    ['shared carga una feature', 'src/shared/lib/X.ts', "import('@/features/sample')"],
+    ['pages carga la red', 'src/pages/X.tsx', "import('@/shared/http/client')"],
+    ['ui carga api', 'src/features/sample/ui/X.tsx', "import('../api/SampleRepository')"],
+  ])('rechaza: %s', async (_case, filePath, expression) => {
+    const messages = await messagesFor(filePath, `export const load = () => ${expression};`, 'no-restricted-syntax');
+    expect(messages).not.toEqual([]);
+  });
+
+  it('la entrada de modyo-cli preview puede usar import()', async () => {
+    const messages = await messagesFor(
+      'src/app/modyo-preview-entry.ts',
+      "await import('./main.tsx');\nexport {};",
       'no-restricted-syntax',
     );
-    expect(messages).not.toEqual([]);
+    expect(messages).toEqual([]);
   });
 });
 
