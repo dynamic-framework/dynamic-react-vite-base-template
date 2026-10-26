@@ -153,6 +153,36 @@ Para evitar esto, el template incluye:
   Esto mantiene un solo punto de import de `liquidParser`, evita duplicar tags Liquid dispersos por el código y facilita ubicar/mockear todas las variables del sitio en un solo lugar. Solo importa `liquidParser` directamente si estás agregando una variable nueva a `widgetConfig.ts`.
 - Si tienes **texto estático** (traducciones, contenido) que por coincidencia contiene `{{` o `}}` y no quieres que Modyo lo interprete → el plugin ya lo resuelve automáticamente en build, no requiere acción extra. Si ves comportamientos raros con Liquid en producción que no ocurren en local, revisa primero si el string problemático pasa por alguno de estos dos mecanismos.
 
+## Qué publica el widget
+
+`npm run build` deja en `dist/` exactamente tres archivos, que son los que sube
+`npm run push`:
+
+| Archivo | Qué es |
+| --- | --- |
+| `main.js` | El código del widget: React, sus dependencias y los iconos de Lucide que usa. |
+| `main.css` | Solo los estilos propios del widget (`src/styles/base.scss`). |
+| `index.html` | La página de desarrollo. Modyo no la renderiza. |
+
+El CSS de Dynamic UI, el theme y las fuentes los carga el sitio una vez para
+toda la página; el widget no los lleva (ver la sección siguiente).
+
+`tests/build/distContents.test.ts` construye el widget y falla si `dist/`
+contiene cualquier otro archivo. Lo más habitual que lo hace fallar:
+
+- **Un archivo en `public/`.** Vite copia `public/` entero a `dist/`.
+- **Una imagen importada en el código que Vite emite como archivo aparte**
+  (`import logo from './logo.png'`). Vite solo incrusta en el bundle las de
+  menos de 4 KB; el resto sale como archivo en `dist/` y no se publicaría.
+
+Las imágenes se sirven desde el sitio (gestor de archivos de Modyo o un CDN) y
+se referencian por URL. Un SVG pequeño puede ir en línea como componente con
+`vite-plugin-svgr`, que el template trae configurado para eso:
+
+```tsx
+import Logo from './logo.svg?react';
+```
+
 ## Estilos: qué lleva el widget y qué pone el sitio
 
 **El sitio de Modyo carga el CSS de Dynamic UI y el theme una vez para toda la página. El widget solo lleva sus estilos propios.**
@@ -350,9 +380,10 @@ configureI18n(resources, { lng: SITE_LANG, fallbackLng: DEFAULT_LANGUAGE });
 npm run build
 ```
 
-Output en `dist/`:
+Output en `dist/` (ver [Qué publica el widget](#qué-publica-el-widget)):
 - `main.js` - Bundle JavaScript
 - `main.css` - Estilos compilados
+- `index.html` - Página de desarrollo
 
 ## Recursos
 
