@@ -163,6 +163,22 @@ const ALLOWED: Array<[string, string, string]> = [
 /** Archivos de src/ que no importan nada y quedan fuera del grafo. */
 const OUTSIDE_GRAPH = [path.join('src', 'vite.env.d.ts')];
 
+/** Carpetas de src/features/; sin features (o sin la carpeta), ninguna. */
+function featureNames(): string[] {
+  try {
+    return readdirSync(path.join(ROOT, 'src/features'), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map(({ name }) => name);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return [];
+    }
+    throw error;
+  }
+}
+
+const FEATURES = featureNames();
+
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
     const full = path.join(dir, entry);
@@ -208,17 +224,19 @@ describe('grafo de importaciones (eslint.config.js)', () => {
 });
 
 describe('puerta propia de cada feature (eslint.config.js)', () => {
-  it.each(readdirSync(path.join(ROOT, 'src/features')))(
-    'rechaza que %s se importe a sí misma por @/features/<nombre>',
-    async (feature) => {
-      const messages = await messagesFor(
-        `src/features/${feature}/api/X.ts`,
-        `import * as self from '@/features/${feature}';\nvoid self;`,
-        'no-restricted-imports',
-      );
-      expect(messages).not.toEqual([]);
-    },
-  );
+  if (FEATURES.length > 0) {
+    it.each(FEATURES)(
+      'rechaza que %s se importe a sí misma por @/features/<nombre>',
+      async (feature) => {
+        const messages = await messagesFor(
+          `src/features/${feature}/api/X.ts`,
+          `import * as self from '@/features/${feature}';\nvoid self;`,
+          'no-restricted-imports',
+        );
+        expect(messages).not.toEqual([]);
+      },
+    );
+  }
 
   it('permite usar otra feature por su index.ts', async () => {
     const messages = await messagesFor(

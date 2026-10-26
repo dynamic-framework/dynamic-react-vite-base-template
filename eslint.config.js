@@ -192,26 +192,37 @@ function architectureRules() {
   ];
 }
 
+/** Carpetas de src/features/; sin features (o sin la carpeta), ninguna. */
+function featureNames() {
+  try {
+    return readdirSync(new URL('./src/features/', import.meta.url), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map(({ name }) => name);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return [];
+    }
+    throw error;
+  }
+}
+
 /**
  * La forma con alias de OWN_ENTRY (`@/features/<propia>`) depende del nombre de
  * cada feature, así que se genera un bloque por carpeta de src/features/. Usa
  * la regla base no-restricted-imports para no reemplazar los bloques de capa.
  */
 function ownFeatureRules() {
-  const featuresDir = new URL('./src/features/', import.meta.url);
-  return readdirSync(featuresDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map(({ name }) => ({
-      files: [`src/features/${name}/**/*.{ts,tsx}`],
-      rules: {
-        'no-restricted-imports': ['error', {
-          patterns: [{
-            group: [`@/features/${name}`, `@/features/${name}/**`],
-            message: 'Dentro de la feature, importa la capa por ruta relativa (../hooks/useX), no por @/features/<propia>.',
-          }],
+  return featureNames().map((name) => ({
+    files: [`src/features/${name}/**/*.{ts,tsx}`],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: [`@/features/${name}`, `@/features/${name}/**`],
+          message: 'Dentro de la feature, importa la capa por ruta relativa (../hooks/useX), no por @/features/<propia>.',
         }],
-      },
-    }));
+      }],
+    },
+  }));
 }
 
 export default defineConfig([
