@@ -35,6 +35,12 @@
       "details": "Show details"
     }
   },
+  "config": {
+    "missing": {
+      "title": "Missing configuration variables",
+      "description": "The widget needs these site variables in Modyo and they did not arrive resolved. Define them in the site variables or turn on vars.use-mocks to work with mock data."
+    }
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
