@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 
 // Mock window.matchMedia. La guarda es para los tests con entorno node
 // (tests/boundaries/distContents.test.ts), donde no hay window.
