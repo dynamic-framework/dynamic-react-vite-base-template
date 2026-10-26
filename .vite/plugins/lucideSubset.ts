@@ -59,17 +59,16 @@ const NON_ICON_EXPORTS = ['createLucideIcon', 'Icon'];
  * componentes de Dynamic resuelven por su cuenta, sin que el widget los
  * mencione nunca.
  *
- * Se usa cuando el `@dynamic-framework/ui-react` instalado no publica
- * `dist/icons-core.json` (2.8.0 y 2.9.0 no lo publican). La lista se obtuvo
- * recorriendo los componentes de ui-react 2.8.0 en busca de los nombres que
- * llegan a `DIcon`/`DIconBase` sin que el widget los mencione: la X de `DAlert`,
- * los chevrons de `DCollapse`, el ojo de `DInputPassword`, etc. El test
- * "los 27 nombres del respaldo existen en el lucide-react instalado" comprueba
- * que todos siguen siendo exports válidos de Lucide.
+ * El conjunto se lee de `dist/icons-core.json` del `@dynamic-framework/ui-react`
+ * instalado; esta lista solo se usa si ese archivo falta o no se puede leer, y
+ * entonces el build lo avisa. Son los nombres que llegan a `DIcon`/`DIconBase`
+ * sin que el widget los mencione: la X de `DAlert`, los chevrons de
+ * `DCollapse`, el ojo de `DInputPassword`, etc. El test "los 27 nombres del
+ * respaldo existen en el lucide-react instalado" comprueba que todos son
+ * exports válidos de Lucide.
  *
- * Si Dynamic agrega un icono interno en una versión futura y el paquete sigue
- * sin publicar el JSON, ese icono faltará: agrégalo aquí o pásalo por
- * `include`.
+ * Con la lista de respaldo, un icono interno que Dynamic no tenga en ella
+ * faltará en el bundle: agrégalo aquí o pásalo por `include`.
  */
 const CORE_ICONS_FALLBACK = [
   // Vía 1 -- valores por defecto de iconMap en DContextProvider (17)
@@ -325,10 +324,8 @@ export function resolveLucidePaths(root: string, uiReactDir: string): LucidePath
  * Las dos listas a las que se aplica vienen de fuera de este archivo --
  * `include` se escribe a mano en vite.config.ts y el conjunto del núcleo se lee
  * de dist/icons-core.json del paquete instalado --, así que ninguna tiene
- * garantía de venir limpia. Una entrada vacía nunca puede coincidir con un icono
- * y antes se informaba como nombre omitido, lo que dejaba en el aviso una coma
- * suelta; una entrada con espacios como `'Book '` tampoco coincidía nunca con el
- * export real.
+ * garantía de venir limpia. Una entrada vacía nunca puede coincidir con un
+ * icono, y una con espacios como `'Book '` no coincide con el export real.
  */
 export function normalizeNames(names: string[]): string[] {
   return [...new Set(names.map((name) => name.trim()).filter((name) => name !== ''))];
@@ -349,10 +346,9 @@ export type CoreIcons = {
 /**
  * Lee el conjunto del núcleo de `dist/icons-core.json` del ui-react instalado.
  *
- * Se aceptan dos formas, porque el archivo todavía no existe en ninguna versión
- * publicada y su forma final no está decidida: un array de strings o un objeto
- * con una clave `icons`. Si falta o no se puede leer, se recurre a la lista
- * embebida.
+ * Acepta un objeto con una clave `icons` (la forma que publica ui-react, junto a
+ * `dynamicUi` y `lucideReact`) o directamente un array de strings. Si falta o
+ * no se puede leer, se recurre a la lista embebida.
  */
 export function loadCoreIcons(uiReactDir: string): CoreIcons {
   const jsonPath = path.join(uiReactDir, 'dist', 'icons-core.json');
@@ -460,9 +456,8 @@ export default function lucideSubset(options: LucideSubsetOptions = {}): Plugin 
       }
 
       // La condicion es fromInclude, no include: un `include` con nombres que
-      // no son exports de Lucide se filtra entero y deja el conjunto sin
-      // determinar igual que un `include` vacio. Mirar include.length dejaba
-      // pasar el build con include: ['NoExiste'] o include: [''].
+      // no son exports de Lucide (['NoExiste'], ['']) se filtra entero y deja
+      // el conjunto sin determinar igual que un `include` vacio.
       if (strict && dynamicSites.length > 0 && fromInclude.length === 0) {
         const detail = dynamicSites
           .map((site) => `  ${site.file}:${site.line}  ${site.text}`)
