@@ -14,11 +14,13 @@ Template base para crear widgets con Dynamic Framework usando Vite.
 | Axios | 1.x | Cliente HTTP |
 | i18next / react-i18next | 25.x / 16.x | Internacionalización |
 | liquidjs | 10.x | Variables Liquid en desarrollo |
-| Vitest | 3.x | Tests |
+| Vitest | 5.x | Tests |
 
 ## Requisitos
 
-- Node.js 22.12.0 o superior (`engines` en `package.json`; `.nvmrc` fija la 22).
+- Node.js 22.13+, 24.x o 26+ (`engines` en `package.json`; `.nvmrc` fija la 22).
+  Las líneas impares (23.x, 25.x) no están soportadas: son non-LTS y varias
+  dependencias las excluyen de su `engines`.
 
 ## Inicio Rápido
 
