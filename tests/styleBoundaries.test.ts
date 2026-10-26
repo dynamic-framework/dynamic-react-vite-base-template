@@ -64,6 +64,8 @@ const SHORTHAND_TOKEN = /^(?:-?\d*\.?\d+(?:px|rem|em|%|vh|vw)?|thin|medium|thick
 /**
  * Un shorthand se acepta si es un número o si, quitando los var(--…), solo
  * quedan medidas y palabras clave: el color tiene que venir de un var(--…).
+ * Una interpolación ${…} fuera de un var(--…) solo vale seguida de una unidad
+ * (${width}px); en cualquier otro sitio podría ser un color y se rechaza.
  */
 function isTokenShorthand(value: string): boolean {
   if (/^-?\d*\.?\d+$/.test(value)) {
@@ -74,8 +76,8 @@ function isTokenShorthand(value: string): boolean {
   }
   const rest = value
     .slice(1, -1)
-    .replace(/\$\{[^}]*\}/g, '0')
-    .replace(/var\((?:[^()]|\([^()]*\))*\)/g, ' ');
+    .replace(/var\((?:[^()]|\([^()]*\))*\)/g, ' ')
+    .replace(/\$\{[^}]*\}(?=px|rem|em|%|vh|vw)/g, '0');
   return rest.split(/[\s,]+/).filter(Boolean).every((token) => SHORTHAND_TOKEN.test(token));
 }
 
