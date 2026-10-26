@@ -1,41 +1,44 @@
 /**
- * useEntities — canonical TanStack Query hook example.
- *
- * Wraps the EntityRepository so components get cache + loading/error states for
- * free, and invalidates the list on mutations. One file per entity (useEntities,
- * usePolicies, ...). Copy to `src/features/<name>/hooks/use<EntityName>.ts` and
- * point the repository import at your `<EntityName>Repository`.
+ * Hooks de TanStack Query de la feature. La caché y los estados de carga y
+ * error son de TanStack Query; las llaves de la feature cuelgan de
+ * `entityKeys.all` para invalidarlas por niveles.
  */
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 
-import { createEntity, getEntities } from '../api/EntityRepository';
-import type { CreateEntityData } from '../model/entity';
+import { createEntity, getEntities } from '../api/entityApi';
+import type { CreateEntityData, EntityFilters } from '../model/entity';
 
 export const entityKeys = {
   all: ['entities'] as const,
   lists: () => [...entityKeys.all, 'list'] as const,
+  list: (filters: EntityFilters) => [...entityKeys.lists(), filters] as const,
 };
 
 /**
- * Fetch the entity list.
+ * Lista de entidades. Cada combinación de filtros tiene su propia entrada en
+ * la caché; mientras llega la de unos filtros nuevos se muestra la anterior.
  */
-export function useEntities() {
+export function useEntities(filters: EntityFilters = {}) {
   return useQuery({
-    queryKey: entityKeys.lists(),
-    queryFn: ({ signal }) => getEntities(signal),
+    queryKey: entityKeys.list(filters),
+    queryFn: ({ signal }) => getEntities(filters, signal),
+    placeholderData: keepPreviousData,
   });
 }
 
 /**
- * Create an entity, invalidating the list on success.
+ * Crea una entidad e invalida todas las listas al terminar.
  */
 export function useCreateEntity() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: CreateEntityData) => createEntity(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: entityKeys.lists() });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: entityKeys.lists() }),
   });
 }

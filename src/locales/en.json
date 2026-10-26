@@ -46,19 +46,17 @@
     "noResults": "No results found",
     "placeholder": "Type to filter..."
   },
-  "examples": {
-    "entityList": {
+  "entities": {
+    "list": {
       "title": "Entities",
-      "addNew": "Add new",
       "create": "Create",
-      "modalTitle": "New entity",
-      "fieldName": "Name",
-      "empty": "No entities yet. Click 'Add new' to create your first one.",
+      "empty": "No entities to display",
       "error": "Could not load entities"
     },
-    "entityCreate": {
-      "title": "Create {type}",
-      "body": "Form placeholder. In a real widget this would contain inputs for the new entity."
+    "create": {
+      "title": "New entity",
+      "name": "Name",
+      "error": "Could not create the entity"
     }
   }
 }

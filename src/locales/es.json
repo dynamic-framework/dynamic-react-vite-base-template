@@ -46,19 +46,17 @@
     "noResults": "Sin resultados",
     "placeholder": "Escribe para filtrar..."
   },
-  "examples": {
-    "entityList": {
+  "entities": {
+    "list": {
       "title": "Entidades",
-      "addNew": "Agregar nuevo",
       "create": "Crear",
-      "modalTitle": "Nueva entidad",
-      "fieldName": "Nombre",
-      "empty": "No hay entidades aún. Haz clic en 'Agregar nuevo' para crear la primera.",
+      "empty": "No hay entidades para mostrar",
       "error": "No se pudieron cargar las entidades"
     },
-    "entityCreate": {
-      "title": "Crear {type}",
-      "body": "Placeholder del formulario. En un widget real esto contendría inputs para la nueva entidad."
+    "create": {
+      "title": "Nueva entidad",
+      "name": "Nombre",
+      "error": "No se pudo crear la entidad"
     }
   }
 }
