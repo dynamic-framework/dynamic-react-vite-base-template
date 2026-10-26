@@ -1,6 +1,6 @@
 /**
- * Modal de creación, registrado como portal en `availablePortals` del
- * DContextProvider de src/app/main.tsx y abierto con
+ * Modal de creación. Se registra como portal en `availablePortals` del
+ * DContextProvider de src/app/main.tsx y se abre con
  * `openPortal('entity-create', { onCreate })`.
  *
  * Los portales se pintan junto al árbol de App, fuera de su QueryProvider: por

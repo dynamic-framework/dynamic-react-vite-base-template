@@ -35,6 +35,12 @@
       "details": "Ver detalles"
     }
   },
+  "config": {
+    "missing": {
+      "title": "Faltan variables de configuración",
+      "description": "El widget necesita estas variables del sitio en Modyo y no llegaron resueltas. Defínelas en las variables del sitio o activa vars.use-mocks para trabajar con datos de prueba."
+    }
+  },
   "common": {
     "save": "Guardar",
     "cancel": "Cancelar",

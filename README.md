@@ -6,41 +6,58 @@ Template base para crear widgets con Dynamic Framework usando Vite.
 
 | Tecnología | Versión | Propósito |
 |------------|---------|-----------|
-| React | 19.x | UI Library |
-| TypeScript | 5.9.x | Type safety |
-| Vite | 7.x | Build tool |
-| Dynamic UI | 2.0.x | Component library |
-| i18next | 25.x | Internacionalización |
+| React | 19.x | UI |
+| TypeScript | 5.9.x | Tipado |
+| Vite | 7.x | Build y servidor de desarrollo |
+| Dynamic UI (`@dynamic-framework/ui-react`) | 2.12.1 | Componentes |
+| TanStack Query | 5.x | Datos remotos y caché |
+| Axios | 1.x | Cliente HTTP |
+| i18next / react-i18next | 25.x / 16.x | Internacionalización |
+| liquidjs | 10.x | Variables Liquid en desarrollo |
+| Vitest | 3.x | Tests |
 
 ## Requisitos
 
-- Node.js >= 22.12.0
-- npm >= 10.x
+- Node.js 22.12.0 o superior (`engines` en `package.json`; `.nvmrc` fija la 22).
 
 ## Inicio Rápido
 
+Un widget nuevo parte de la versión publicada del template, con una historia de git propia:
+
 ```bash
-# Clonar template
-git clone https://github.com/dynamic-framework/dynamic-react-vite-base-template.git my-widget
-cd my-widget
+# Clonar la versión 1.4.0 del template
+git clone --depth 1 --branch v1.4.0 https://github.com/dynamic-framework/dynamic-react-vite-base-template.git mi-widget
+cd mi-widget
 
-# Instalar dependencias
-npm install
+# Empezar una historia propia
+rm -rf .git
+git init
 
-# Iniciar desarrollo
+# Instalar dependencias e iniciar desarrollo
+npm ci
 npm run dev
 ```
+
+> El botón **Use this template** de GitHub copia la rama por defecto del repositorio, no una versión publicada. Para partir de una versión concreta, usa el `git clone --branch v1.4.0` de arriba.
+
+Después, en el widget nuevo:
+
+1. Cambia `name` en `package.json` y en `widget.manifest.json` (deben coincidir) y fija la `version` del widget en los dos.
+2. Cambia el nombre de montaje `widgetName`: la constante `WIDGET_NAME` de `src/app/main.tsx` y el `data-widget` del contenedor de `index.html` (ver [Punto de montaje](#punto-de-montaje)).
+3. Cambia la clase `widget-name` en `index.html`, `src/styles/base.scss` y `selector-class-pattern` de `.stylelintrc` (ver [Estilos](#estilos-qué-lleva-el-widget-y-qué-pone-el-sitio)).
+4. Copia `.modyo.example` a `.modyo` y complétalo (ver [Configuración de Modyo](#configuración-de-modyo)).
 
 ## Scripts Disponibles
 
 | Script | Descripción |
 |--------|-------------|
-| `npm run dev` | Inicia servidor de desarrollo |
-| `npm run build` | Compila para producción |
-| `npm run preview` | Preview del build de producción |
+| `npm run dev` (o `npm start`) | Inicia el servidor de desarrollo |
+| `npm run build` | Compila para producción en `dist/` |
+| `npm run preview` | Sirve `dist/` en local |
 | `npm run lint` | Ejecuta ESLint |
 | `npm run stylelint` | Ejecuta Stylelint para CSS/SCSS |
-| `npm run test` | Ejecuta tests con Vitest |
+| `npm run test` | Ejecuta los tests con Vitest |
+| `npm run test:watch` | Ejecuta los tests en modo watch |
 | `npm run push` | Build + push a Modyo |
 | `npm run push:publish` | Build + push + publish a Modyo |
 | `npm run push:debug` | Build + push con logging de diagnóstico |
@@ -70,7 +87,10 @@ El código se organiza por dominio: cada dominio es una feature con todas sus ca
 │   ├── locales/             # Traducciones (es.json, en.json)
 │   └── styles/              # SCSS propio del widget
 ├── tests/                   # Espejo de src/, más boundaries/ y vite-plugins/
+├── .vite/plugins/           # Plugins de build: escapeLiquidInStrings y lucideSubset
+├── docs/recipes/            # Recetas de módulos opcionales
 ├── index.html               # Página de desarrollo
+├── widget.manifest.json     # Manifiesto del widget
 ├── vite.config.ts           # Configuración de Vite y Vitest
 └── eslint.config.js         # Linting y grafo de importaciones
 ```
@@ -121,7 +141,7 @@ src/features/entities/
 │   └── useEntities.ts         # Llaves de la feature y hooks de TanStack Query
 └── ui/
     ├── EntityListScreen.tsx   # Bloque con estados de carga, vacío y error
-    └── EntityCreateModal.tsx  # Modal registrado como portal
+    └── EntityCreateModal.tsx  # Modal que se abre como portal
 ```
 
 1. **Copia** la feature y sus tests con el nombre del dominio en kebab-case:
@@ -134,12 +154,21 @@ src/features/entities/
 2. **Renombra** archivos e identificadores en las dos copias, respetando mayúsculas: `Entities` → `<Dominios>`, `Entity` → `<Dominio>`, `entities` → `<dominios>`, `entity` → `<dominio>`. Eso cubre `entityApi.ts`, `entity.dto.ts`, `useEntities`, `entityKeys` (su primera llave, `['entities']`, debe ser única en el widget) y el nombre del portal (`'entity-create'`). En los tests, las rutas `@/features/entities/...` pasan a `@/features/<nombre>/...`.
 3. **Ajusta el dominio:** el endpoint en `api/`, los campos del dto y del tipo de dominio, y el mapper que los une.
 4. **Textos:** copia el bloque `entities` de `src/locales/es.json` y `src/locales/en.json` con el nombre nuevo; el componente usa `t('<dominios>.list.title')` y similares.
-5. **Usa la feature** desde `src/pages/` con `import { ... } from '@/features/<nombre>'`. Si tiene portales, regístralos en `availablePortals` del `DContextProvider` de `src/app/main.tsx`.
-6. Ejecuta `npm run lint`, `npm test` y `npm run build`.
+5. **Usa la feature** desde `src/pages/` con `import { ... } from '@/features/<nombre>'`.
+6. **Registra el modal** cuando el widget lo use. El template arranca con `availablePortals` vacío en el `DContextProvider` de `src/app/main.tsx`; el modal de la feature se registra ahí con su nombre de portal. Con la feature de referencia:
+
+   ```tsx
+   import { EntityCreateModal, type EntityPortals } from '@/features/entities';
+
+   <DContextProvider<EntityPortals> availablePortals={{ 'entity-create': EntityCreateModal }}>
+   ```
+
+   Registrarlo incluye `DModal` y su animación (`framer-motion`) en `main.js`, aunque la página no llegue a abrirlo, así que no lo registres si el widget no lo abre. Si una pantalla llama a `openPortal` con un nombre sin registrar, Dynamic lanza un error.
+7. Ejecuta `npm run lint`, `npm test` y `npm run build`.
 
 Si el dominio es pequeño, borra lo que no use:
 
-- **Solo lectura:** quita `createEntity` de `api/`, `useCreateEntity` de `hooks/`, `CreateEntityData` de `model/`, `EntityCreateModal.tsx` (y su registro en `main.tsx`), el botón de crear de `EntityListScreen.tsx` y los tests de creación.
+- **Solo lectura:** quita `createEntity` de `api/`, `useCreateEntity` de `hooks/`, `CreateEntityData` de `model/`, `EntityCreateModal.tsx` (y su registro en `main.tsx`, si lo hiciste), el botón de crear de `EntityListScreen.tsx` y los tests de creación.
 - **Sin filtros:** quita `EntityFilters`, el parámetro `filters` de `api/` y de `hooks/` y la búsqueda de `EntityListScreen.tsx`.
 - **Sin pantalla propia:** si otra feature o una página pinta los datos, borra `ui/` y deja que `index.ts` exporte solo los hooks y los tipos.
 - **API sin transformar:** si la respuesta ya tiene la forma del dominio, el mapper puede reducirse a devolver el dto, pero mantenlo: es el único punto que cambia si la API cambia.
@@ -215,23 +244,23 @@ Ver `.modyo.example` para todas las opciones disponibles y la [documentación de
 
 ## Code Splitting
 
-Para widgets grandes que requieren code splitting, usa la rama `feat/with-chunks`:
+El build genera un único `main.js` en formato IIFE (`format: 'iife'` en `vite.config.ts`). Con ese formato no hay chunks: si el código usara `import()` o `React.lazy`, Vite incluiría el módulo importado dentro del mismo `main.js` y no emitiría archivos aparte, así que la descarga no se reduce. Por eso ESLint no admite `import()` en `src/` (ver [Grafo de importaciones](#grafo-de-importaciones)).
 
-```bash
-git checkout feat/with-chunks
-```
+Para que `main.js` pese menos, lo que funciona es no importar lo que la página no usa:
 
-Esta rama incluye configuración adicional para dividir el bundle en chunks que se cargan dinámicamente. Ver [README de feat/with-chunks](https://github.com/dynamic-framework/dynamic-react-vite-base-template/tree/feat/with-chunks) para más información.
+- Registra en `availablePortals` solo los modales que el widget abre (ver [Agregar una feature](#agregar-una-feature)).
+- Importa una feature solo desde donde se usa: importar su `index.ts` incluye en el bundle los módulos que ejecutan código al cargarse, como el cliente HTTP con axios, aunque ninguna página use la feature.
+- Los iconos de Lucide ya se recortan en el build (ver [Iconos y tamaño del bundle](#iconos-y-tamaño-del-bundle)).
 
 ## Linting y Formato
 
 El template incluye:
 
-- **ESLint** - Linting de TypeScript/React (flat config)
-- **Stylelint** - Linting de CSS/SCSS (Bootstrap config)
-- **Husky** - Git hooks para pre-commit
-- **lint-staged** - Lint solo archivos staged
-- **Commitlint** - Validación de mensajes de commit (conventional commits)
+- **ESLint**: linting de TypeScript/React (flat config, `eslint.config.js`).
+- **Stylelint**: linting de CSS/SCSS (`stylelint-config-twbs-bootstrap` y reglas propias en `.stylelintrc`).
+- **Husky**: hooks de git. `pre-commit` ejecuta lint-staged y `commit-msg` ejecuta Commitlint.
+- **lint-staged**: `eslint --fix` sobre los `.ts`/`.tsx` de `src/` y `src/config/*.json`, y `stylelint --fix` sobre los `.scss` de `src/`, solo en los archivos staged.
+- **Commitlint**: mensajes con conventional commits; los tipos admitidos son `feat`, `fix`, `docs`, `chore`, `style`, `refactor` y `test`.
 
 ## Testing
 
@@ -240,11 +269,10 @@ El template incluye:
 npm run test
 
 # Ejecutar tests en modo watch
-npm run test -- --watch
-
-# Ejecutar con coverage
-npm run test -- --coverage
+npm run test:watch
 ```
+
+El template no trae el proveedor de coverage. Para medirlo, instala `@vitest/coverage-v8` en la misma versión mayor que `vitest` y ejecuta `npm run test -- --coverage`.
 
 ## Manejo de Liquid
 
@@ -258,9 +286,9 @@ Para evitar esto, el template incluye:
 
   const siteName = liquidParser.parse('{{site.name}}');
   ```
-  Los valores mock para desarrollo local se configuran en `src/config/liquid.json`.
+  Los valores mock para desarrollo local se configuran en `src/config/liquid.json`. Ni ese archivo ni `liquidjs` llegan al build: `src/config/liquidConfig.ts` solo inicializa el parser cuando `import.meta.env.DEV` es verdadero, y en el build ese bloque se elimina. La excepción es construir con `NODE_ENV=development` heredado del entorno, que deja el bloque dentro; por eso `liquid.json` nunca lleva credenciales reales.
 
-- **Plugin `escapeLiquidInStrings` (`.vite/plugins/escapeLiquidInStrings.ts`)**: se ejecuta solo en `build` y escapa los literales `"{{"` y `"}}"` que queden en el bundle final (por ejemplo, texto de UI que contenga esos caracteres sin ser Liquid intencional) convirtiéndolos a `\u007B\u007B` / `\u007D\u007D`. Esto es transparente para JS pero invisible para el parser de Liquid, evitando falsos positivos al momento del renderizado en Modyo.
+- **Plugin `escapeLiquidInStrings` (`.vite/plugins/escapeLiquidInStrings.ts`)**: se ejecuta solo en `build` y convierte los string literals exactos `"{{"` y `"}}"` (con comillas simples o dobles) del bundle en `"\u007B\u007B"` / `"\u007D\u007D"`. Son los que traen algunas dependencias, por ejemplo como delimitadores por defecto. JavaScript los interpreta igual, y Liquid ya no los ve. Un string que **contiene** `{{` junto a otro texto no se escapa.
 
 **¿Cuándo usar cada uno?**
 - Si necesitas **leer** una variable/config que vive en el sitio Modyo (idioma, nombre del sitio, variables custom), la convención del template es declararla una única vez en `src/config/widgetConfig.ts` usando `liquidParser.parse(...)` y exportarla desde ahí (como ya se hace con `SITE_LANG`, `SITE_NAME`, `VARS_CURRENCY`, etc.). El resto del código debe importar esas constantes desde `widgetConfig.ts` en vez de llamar a `liquidParser` directamente en cada archivo:
@@ -272,7 +300,36 @@ Para evitar esto, el template incluye:
   import { SITE_NAME } from '@/config/widgetConfig';
   ```
   Esto mantiene un solo punto de import de `liquidParser`, evita duplicar tags Liquid dispersos por el código y facilita ubicar/mockear todas las variables del sitio en un solo lugar. Solo importa `liquidParser` directamente si estás agregando una variable nueva a `widgetConfig.ts`.
-- Si tienes **texto estático** (traducciones, contenido) que por coincidencia contiene `{{` o `}}` y no quieres que Modyo lo interprete → el plugin ya lo resuelve automáticamente en build, no requiere acción extra. Si ves comportamientos raros con Liquid en producción que no ocurren en local, revisa primero si el string problemático pasa por alguno de estos dos mecanismos.
+- Si tienes **texto** (traducciones, contenido) con `{{` o `}}`, Modyo lo interpretará como Liquid: el plugin solo cubre los literales exactos `"{{"` y `"}}"`. Evita esas secuencias en el texto. Las traducciones interpolan con llaves simples (`{lang}`), que es como las configura `configureI18n` de Dynamic. Si ves comportamientos raros con Liquid en producción que no ocurren en local, revisa primero si el string problemático contiene `{{` o `}}`.
+
+## Variables obligatorias
+
+`src/config/widgetConfig.ts` se organiza por bloques: el núcleo y uno por cada módulo opcional. Cada bloque declara sus variables Liquid; las que el widget necesita para funcionar se declaran con `requireVariable`, que las registra como obligatorias:
+
+```ts
+export const API_BASE_URL = requireVariable('vars.api-base-url', liquidParser.parse('{{vars.api-base-url}}'));
+```
+
+El nombre va sin llaves y el tag se escribe literal: Modyo sustituye cada `{{...}}` del bundle, incluido uno que solo sirviera para mostrar el nombre. `tests/config/widgetConfig.test.ts` comprueba que cada nombre coincide con su tag.
+
+El núcleo exige `vars.api-base-url`. Las variables de moneda (`vars.currency-*`) no son obligatorias: si alguna llega sin resolver, el widget no fija la moneda y Dynamic usa su formato por defecto.
+
+### Gate de configuración
+
+Al renderizar, `App` llama a `getMissingVariables()`. Si falta alguna variable obligatoria, el widget pinta cuáles faltan en lugar de la página, en vez de fallar en silencio con peticiones a una URL vacía. Una variable falta si llega vacía (Modyo la deja así cuando el sitio no la define) o con el tag Liquid tal cual.
+
+Con `vars.use-mocks` en `"true"` no se exige ninguna: el widget trabaja con datos de prueba. Es el caso en desarrollo, con los valores de `src/config/liquid.json`.
+
+## Módulos opcionales
+
+El template no trae instalado ningún módulo opcional. Cada receta indica la dependencia, los archivos, las variables que añade a `widgetConfig.ts` y cómo quitarlo.
+
+| Módulo | Para qué | Receta |
+|--------|----------|--------|
+| Router | Navegación entre pantallas dentro del widget, con React Router | [`docs/recipes/router.md`](docs/recipes/router.md) |
+| Modyo Content | Leer entradas de un espacio de Modyo Content con `@modyo/sdk` | [`docs/recipes/modyo-content.md`](docs/recipes/modyo-content.md) |
+
+Quitar un módulo es borrar su bloque de `widgetConfig.ts`, junto con su dependencia y sus archivos; su variable deja de ser obligatoria en el mismo paso.
 
 ## Qué publica el widget
 
@@ -376,7 +433,7 @@ Lo comprueban `npm run stylelint` (archivos `.css` y `.scss`) y `tests/boundarie
 Para que `npm run dev` se vea bien, `index.html` enlaza el CSS de Dynamic desde el CDN:
 
 ```html
-<link rel="stylesheet" href="https://cdn.dynamicframework.dev/assets/2.12.0/ui-react/css/dynamic-ui.min.css">
+<link rel="stylesheet" href="https://cdn.dynamicframework.dev/assets/2.12.1/ui-react/css/dynamic-ui.min.css">
 ```
 
 Modyo **nunca renderiza `index.html`**: compone la página con su propio template e inyecta `main.js` y `main.css`. Nada de lo que pongas ahí llega al widget publicado.
@@ -389,11 +446,11 @@ Dos detalles que importan:
 Sin el theme de tu sitio ves los tokens por defecto de Dynamic, no los de tu marca. Para verlos en local, añade a `index.html` un `<link>` al theme **después** del de Dynamic, para que sus valores prevalezcan. La URL sale del `<head>` del sitio publicado (el `<link>` a `/stylesheets/...css`) y también tiene que ser absoluta:
 
 ```html
-<link rel="stylesheet" href="https://cdn.dynamicframework.dev/assets/2.12.0/ui-react/css/dynamic-ui.min.css">
+<link rel="stylesheet" href="https://cdn.dynamicframework.dev/assets/2.12.1/ui-react/css/dynamic-ui.min.css">
 <link rel="stylesheet" href="https://tu-sitio.ejemplo.com/stylesheets/site-theme.css">
 ```
 
-> `npm run preview` sirve el `dist` ya construido, así que ahí **no** verás el CSS de Dynamic. Es correcto: es exactamente lo que recibe Modyo. Para ver el widget con estilos usa `npm run dev` o el preview de Modyo CLI, que corre contra el sitio real.
+> `npm run preview` sirve el `dist/` ya construido. Su `index.html` conserva el `<link>` al CDN, así que el CSS de Dynamic se ve; el resto es lo que recibe Modyo: `main.js` y `main.css`. Como ahí nadie resuelve los tags Liquid, el widget muestra el aviso de variables que faltan (ver [Gate de configuración](#gate-de-configuración)). Para trabajar con los valores de `src/config/liquid.json` usa `npm run dev`; para ver el widget con el sitio real, el preview de Modyo CLI.
 
 ## Iconos y tamaño del bundle
 
@@ -427,7 +484,10 @@ Los iconos incluidos son la unión de:
    literales en posición de tipo y los especificadores de `import` no cuentan.
 2. **Núcleo de Dynamic**: los iconos que los propios componentes usan por dentro
    (la X de `DAlert`, los chevrons de `DCollapse`, el ojo de `DInputPassword`,
-   etc.). No hay que declararlos: se incluyen siempre.
+   etc.). No hay que declararlos: se incluyen siempre. La lista se lee de
+   `dist/icons-core.json` del `@dynamic-framework/ui-react` instalado; si el
+   paquete no la publica, el plugin usa una lista de respaldo y lo avisa en el
+   build. `icons-manifest.json` indica cuál se usó en `coreSource`.
 3. **La opción `include`** (ver abajo).
 
 Solo actúa en `build`. En `npm run dev` y en el preview del CLI de Modyo el
@@ -502,9 +562,9 @@ sospechas que el plugin es la causa de un icono que no se pinta.
 
 El modo de fallo es **silencioso**: cuando el nombre no está en el bundle,
 Dynamic no lanza ningún error, renderiza `<i class="d-icon bi bi-<Nombre>"></i>`
-y simplemente no se ve nada. Eso ya pasa hoy con cualquier nombre que no exista
-en Lucide; el plugin amplía el conjunto de nombres que caen en ese camino. Para
-diagnosticar:
+y simplemente no se ve nada. Es lo mismo que ocurre con cualquier nombre que no
+exista en Lucide; el plugin amplía el conjunto de nombres que caen en ese camino.
+Para diagnosticar:
 
 1. Mira `node_modules/.vite/icons-manifest.json` y comprueba si el nombre está
    en `included`.
@@ -522,8 +582,8 @@ Configuración (`src/config/i18nConfig.ts`):
 ```ts
 import { configureI18n } from '@dynamic-framework/ui-react';
 
-import en from '../locales/en.json';
-import es from '../locales/es.json';
+import en from '@/locales/en.json';
+import es from '@/locales/es.json';
 
 import { DEFAULT_LANGUAGE, SITE_LANG } from './widgetConfig';
 
@@ -536,8 +596,8 @@ configureI18n(resources, { lng: SITE_LANG, fallbackLng: DEFAULT_LANGUAGE });
 ```
 
 - Las traducciones viven en `src/locales/*.json` (uno por idioma).
-- El idioma inicial se toma de `SITE_LANG` (resuelto vía Liquid desde `{{site.language}}`, ver sección anterior), de modo que el widget arranca en el idioma configurado en el sitio de Modyo.
-- El idioma por defecto es `es` y se cambia en `DEFAULT_LANGUAGE`, en `src/config/widgetConfig.ts`.
+- El idioma inicial se toma de `SITE_LANG` (resuelto vía Liquid desde `{{site.language}}`, ver [Manejo de Liquid](#manejo-de-liquid)), de modo que el widget arranca en el idioma configurado en el sitio de Modyo.
+- El idioma por defecto es `es` y se cambia en `DEFAULT_LANGUAGE`, en `src/config/widgetConfig.ts`. Si `{{site.language}}` llega vacío o sin resolver, `SITE_LANG` toma ese valor; también es el idioma de respaldo de i18next (`fallbackLng`).
 - Para cambiar de idioma en runtime se expone `changeLanguage(lang)` desde el mismo archivo.
 - En componentes se usa el hook estándar de `react-i18next`:
   ```tsx
