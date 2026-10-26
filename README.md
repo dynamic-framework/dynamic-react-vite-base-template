@@ -240,6 +240,35 @@ Para evitar esto, el template incluye:
   Esto mantiene un solo punto de import de `liquidParser`, evita duplicar tags Liquid dispersos por el código y facilita ubicar/mockear todas las variables del sitio en un solo lugar. Solo importa `liquidParser` directamente si estás agregando una variable nueva a `widgetConfig.ts`.
 - Si tienes **texto estático** (traducciones, contenido) que por coincidencia contiene `{{` o `}}` y no quieres que Modyo lo interprete → el plugin ya lo resuelve automáticamente en build, no requiere acción extra. Si ves comportamientos raros con Liquid en producción que no ocurren en local, revisa primero si el string problemático pasa por alguno de estos dos mecanismos.
 
+## Variables obligatorias
+
+`src/config/widgetConfig.ts` se organiza por bloques: el núcleo y uno por cada módulo opcional. Cada bloque declara sus variables Liquid; las que el widget necesita para funcionar se declaran con `requireVariable`, que las registra como obligatorias:
+
+```ts
+export const API_BASE_URL = requireVariable('vars.api-base-url', liquidParser.parse('{{vars.api-base-url}}'));
+```
+
+El nombre va sin llaves y el tag se escribe literal: Modyo sustituye cada `{{...}}` del bundle, incluido uno que solo sirviera para mostrar el nombre. `tests/config/widgetConfig.test.ts` comprueba que cada nombre coincide con su tag.
+
+El núcleo exige `vars.api-base-url`. Las variables de moneda (`vars.currency-*`) no son obligatorias: si alguna llega sin resolver, el widget no fija la moneda y Dynamic usa su formato por defecto.
+
+### Gate de configuración
+
+Al renderizar, `App` llama a `getMissingVariables()`. Si falta alguna variable obligatoria, el widget pinta cuáles faltan en lugar de la página, en vez de fallar en silencio con peticiones a una URL vacía. Una variable falta si llega vacía (Modyo la deja así cuando el sitio no la define) o con el tag Liquid tal cual.
+
+Con `vars.use-mocks` en `"true"` no se exige ninguna: el widget trabaja con datos de prueba. Es el caso en desarrollo, con los valores de `src/config/liquid.json`.
+
+## Módulos opcionales
+
+El template no trae instalado ningún módulo opcional. Cada receta indica la dependencia, los archivos, las variables que añade a `widgetConfig.ts` y cómo quitarlo.
+
+| Módulo | Para qué | Receta |
+|--------|----------|--------|
+| Router | Navegación entre pantallas dentro del widget, con React Router | [`docs/recipes/router.md`](docs/recipes/router.md) |
+| Modyo Content | Leer entradas de un espacio de Modyo Content con `@modyo/sdk` | [`docs/recipes/modyo-content.md`](docs/recipes/modyo-content.md) |
+
+Quitar un módulo es borrar su bloque de `widgetConfig.ts`, junto con su dependencia y sus archivos; su variable deja de ser obligatoria en el mismo paso.
+
 ## Qué publica el widget
 
 `npm run build` deja en `dist/` exactamente tres archivos, que son los que sube
