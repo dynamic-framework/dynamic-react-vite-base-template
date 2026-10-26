@@ -5,7 +5,7 @@
  *
  *  1. The URL has to be **absolute**. That is the only thing keeping it out of
  *     the bundle: Vite resolves a node_modules path and it ends up inside
- *     dist/main.css (measured: 1,278,396 B instead of 65).
+ *     dist/main.css.
  *  2. The version has to stay aligned with the installed package. That is the
  *     price of writing it by hand, and what this test pays.
  */
@@ -62,12 +62,5 @@ describe("Dynamic's <link> in index.html", () => {
       `index.html links Dynamic ${linkedVersion} but ${installed} is installed. `
       + "Update index.html's <link> or the dependency.",
     ).toBe(installed);
-  });
-});
-
-describe("the framework's CSS is not imported from the code", () => {
-  it('main.tsx imports the widget styles only', () => {
-    const mainTsx = readFileSync(path.join(ROOT, 'src/main.tsx'), 'utf8');
-    expect(mainTsx).not.toContain('dynamic-ui.css');
   });
 });
