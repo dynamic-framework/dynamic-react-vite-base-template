@@ -18,7 +18,7 @@ Por eso hay dos variantes:
 
 Con `HashRouter` la recarga siempre funciona, pero las anclas (`#seccion`) de la página dejan de estar disponibles y las URLs son menos legibles.
 
-Si en la misma página hay dos widgets con `BrowserRouter`, ambos leen la misma URL: cada uno debe usar un `basename` distinto o solo uno de ellos debe tener router.
+La URL es una sola para toda la página: solo un widget puede tener `BrowserRouter` o `HashRouter`. Un `basename` distinto por widget no los aísla: si la ruta actual no empieza por su `basename`, el router no pinta nada y ese widget queda en blanco. Un widget que necesite navegación propia en una página donde otro ya tiene la URL usa `MemoryRouter`: navega en memoria, sin cambiar la URL, y vuelve a su ruta inicial al recargar.
 
 ## 1. Dependencia
 
@@ -71,7 +71,11 @@ import { CONTEXT_CONFIG, getMissingVariables, ROUTER_BASENAME } from '@/config/w
               )}
 ```
 
-Para `HashRouter`, cambia `BrowserRouter` por `HashRouter`, quita `basename` y no añadas el bloque del paso 2.
+Para `HashRouter`, no añadas el bloque del paso 2 y, en `App.tsx`:
+
+- importa `HashRouter` en lugar de `BrowserRouter` desde `react-router`;
+- quita `ROUTER_BASENAME` de la importación de `@/config/widgetConfig`, que queda en `import { CONTEXT_CONFIG, getMissingVariables } from '@/config/widgetConfig';`;
+- cambia `<BrowserRouter basename={ROUTER_BASENAME}>` por `<HashRouter>` y su cierre por `</HashRouter>`.
 
 Las rutas se declaran en `App.tsx` y cada una apunta a una página de `src/pages/`; las páginas componen features. Dentro de una feature, la navegación se hace con `useNavigate` o `<Link>` de `react-router` desde `ui/`.
 

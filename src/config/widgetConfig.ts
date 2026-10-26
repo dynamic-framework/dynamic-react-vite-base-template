@@ -31,10 +31,14 @@ function requireVariable(name: string, value: string): string {
   return value;
 }
 
+/** Conserva el tag Liquid: Modyo no lo procesó. */
+function hasLiquidTag(value: string): boolean {
+  return value.includes('{{') && value.includes('}}');
+}
+
 /** Vacía o con el tag Liquid tal cual: Modyo no la resolvió. */
 export function isUnresolved(value: string): boolean {
-  const trimmed = value.trim();
-  return !trimmed || (trimmed.includes('{{') && trimmed.includes('}}'));
+  return !value.trim() || hasLiquidTag(value);
 }
 
 /** Nombres de las variables sin resolver; con mocks activos no se exige ninguna. */
@@ -65,9 +69,13 @@ export type RawCurrency = Record<keyof CurrencyProps, string>;
  * Formato de moneda del sitio. Si alguna variable llega sin resolver (o la
  * precisión no es un número), devuelve undefined y Dynamic usa su formato por
  * defecto.
+ *
+ * El separador de miles puede ser un espacio (normal, NBSP o NBSP estrecho):
+ * solo cuenta como sin resolver si llega vacío o con el tag Liquid.
  */
 export function resolveCurrency(raw: RawCurrency): CurrencyProps | undefined {
-  if (Object.values(raw).some(isUnresolved)) {
+  const { separator, ...rest } = raw;
+  if (Object.values(rest).some(isUnresolved) || !separator || hasLiquidTag(separator)) {
     return undefined;
   }
   const precision = Number(raw.precision);

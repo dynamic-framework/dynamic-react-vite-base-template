@@ -137,6 +137,19 @@ describe('moneda', () => {
     },
   );
 
+  it.each([' ', '\u00A0', '\u202F'])('conserva el separador de miles %j', (separator) => {
+    expect(resolveCurrency({ ...raw, symbol: '€', separator })).toEqual({
+      symbol: '€',
+      precision: 2,
+      separator,
+      decimal: ',',
+    });
+  });
+
+  it('sin separador de miles devuelve undefined', () => {
+    expect(resolveCurrency({ ...raw, separator: '' })).toBeUndefined();
+  });
+
   it.each(['abc', '-1', '1.5'])('con precisión %j devuelve undefined', (precision) => {
     expect(resolveCurrency({ ...raw, precision })).toBeUndefined();
   });
