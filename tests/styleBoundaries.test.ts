@@ -44,6 +44,8 @@ interface Check {
   pattern: RegExp;
   ignoreComments: boolean;
   hint: string;
+  /** Si se indica, la comprobación solo recorre archivos con estas extensiones. */
+  extensions?: string[];
 }
 
 const CHECKS: Check[] = [
@@ -54,14 +56,24 @@ const CHECKS: Check[] = [
     hint: 'usa var(--bs-*) de Dynamic, por ejemplo rgb(var(--bs-primary-rgb))',
   },
   {
+    // En los objetos de estilo de TS/TSX (style={{ ... }} o un CSSProperties),
+    // las propiedades de color solo aceptan var(--…). En CSS y SCSS los colores
+    // los controla Stylelint.
+    name: 'colores fuera de var(--…) en objetos de estilo',
+    pattern: /(?<=(?:style=\{\{|CSSProperties\s*=\s*\{)[^{}]*)(?<![\w-])(["']?)(?:color|backgroundColor|border(?:Top|Right|Bottom|Left|Block|Inline)?(?:Start|End)?Color|outlineColor|fill|stroke)\1\s*:(?!\s*["'`]var\(--)[^,}\n]*/g,
+    ignoreComments: true,
+    hint: "usa var(--bs-*) de Dynamic, por ejemplo color: 'var(--bs-body-color)'",
+    extensions: ['.ts', '.tsx'],
+  },
+  {
     name: 'font-family',
-    pattern: /font-?[Ff]amily\s*[:=]/g,
+    pattern: /font-?[Ff]amily["']?\s*[:=]/g,
     ignoreComments: false,
     hint: 'la tipografía viene del theme; usa las clases fs-* y fw-* de Dynamic',
   },
   {
     name: 'border-radius',
-    pattern: /border-?(?:[A-Za-z]+-?){0,2}[Rr]adius\s*[:=]/g,
+    pattern: /border-?(?:[A-Za-z]+-?){0,2}[Rr]adius["']?\s*[:=]/g,
     ignoreComments: false,
     hint: 'los radios vienen del theme; usa las clases rounded-* de Dynamic',
   },
@@ -75,15 +87,20 @@ const CHECKS: Check[] = [
     hint: 'lo carga el sitio; el widget solo importa sus estilos propios',
   },
   {
-    name: 'una zona [data-bs-theme=…]',
-    pattern: /\[data-bs-theme\s*[~|^$*]?=\s*["']?[\w-]+["']?\]/g,
+    // Con o sin valor y con espacios dentro de los corchetes. El atributo
+    // data-bs-theme="…" en el JSX no lleva corchetes y sigue permitido.
+    name: 'una zona [data-bs-theme]',
+    pattern: /\[\s*data-bs-theme\s*(?:[~|^$*]?=\s*(?:"[^"]*"|'[^']*'|[\w-]+)\s*(?:[iIsS]\s*)?)?\]/g,
     ignoreComments: true,
     hint: 'las zonas las define el theme del sitio; el widget solo pone el atributo en el JSX',
   },
 ];
 
-function findViolations({ pattern, ignoreComments }: Check): string[] {
+function findViolations({ pattern, ignoreComments, extensions }: Check): string[] {
   return files.flatMap(({ file, source }) => {
+    if (extensions && !extensions.some((ext) => file.endsWith(ext))) {
+      return [];
+    }
     const text = ignoreComments ? stripComments(source) : source;
     return [...text.matchAll(pattern)].map((match) => {
       const line = text.slice(0, match.index).split('\n').length;
