@@ -173,6 +173,14 @@ describe('grafo de importaciones (eslint.config.js)', () => {
     }
     expect(uncovered, 'Archivos sin regla del grafo: revisa los globs de architectureRules().').toEqual([]);
   });
+
+  it('el código de src/ respeta el grafo', async () => {
+    const results = await eslint.lintFiles([path.join(ROOT, 'src/**/*.{ts,tsx}')]);
+    const found = results.flatMap((result) => result.messages
+      .filter((m) => m.ruleId === RULE)
+      .map((m) => `${path.relative(ROOT, result.filePath)}:${m.line} ${m.message}`));
+    expect(found).toEqual([]);
+  });
 });
 
 describe('texto visible y configuración (eslint.config.js)', () => {
