@@ -170,8 +170,8 @@ Por eso `src/main.tsx` importa únicamente `./styles/base.scss` y **no** `dynami
 
 Colores, tipografía, radios y zonas de theme vienen de Dynamic y del theme del sitio. En `src/` no se permiten:
 
-- colores hex o con nombre; en los objetos de estilo de TSX (`style={{}}`), las propiedades de color (`color`, `backgroundColor`, `borderColor`, `fill`…) solo aceptan `var(--…)`;
-- `font`, `font-family` ni `border-radius` (tampoco los radios por esquina);
+- colores hex o con nombre; en los objetos de estilo de TSX (`style={{}}`), las propiedades de color (`color`, `background`, `borderColor`, `fill`…) solo aceptan `var(--…)`, y en los shorthands (`border`, `outline`, `boxShadow`…) el color también va con `var(--…)`, por ejemplo `'1px solid var(--bs-border-color)'`;
+- `font`, `font-family` ni `border-radius` (tampoco los radios por esquina), tampoco en `style={{}}`;
 - variables SCSS (`$x`) ni `@import`;
 - el CSS de Dynamic, ni compilado (`dynamic-ui.css`) ni desde sus fuentes (`@dynamic-framework/ui-react/src/style/...`);
 - selectores `[data-bs-theme]`, con o sin valor: el widget solo pone el atributo en el JSX.

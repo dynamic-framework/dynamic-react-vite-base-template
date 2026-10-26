@@ -46,6 +46,37 @@ interface Check {
   hint: string;
   /** Si se indica, la comprobación solo recorre archivos con estas extensiones. */
   extensions?: string[];
+  /** Si se indica, descarta las coincidencias para las que devuelve true. */
+  allow?: (match: RegExpMatchArray) => boolean;
+}
+
+/**
+ * Clave (con o sin comillas) de un objeto de estilo de TS/TSX:
+ * `style={{ ... }}` o un objeto tipado como CSSProperties.
+ */
+function styleKey(keys: string): string {
+  return String.raw`(?<=(?:style=\{\{|CSSProperties\s*=\s*\{)[^{}]*)(?<![\w-])(["']?)(?:${keys})\1\s*:`;
+}
+
+/** Medidas y palabras clave sin color de border, outline y las sombras. */
+const SHORTHAND_TOKEN = /^(?:-?\d*\.?\d+(?:px|rem|em|%|vh|vw)?|thin|medium|thick|none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset)$/;
+
+/**
+ * Un shorthand se acepta si es un número o si, quitando los var(--…), solo
+ * quedan medidas y palabras clave: el color tiene que venir de un var(--…).
+ */
+function isTokenShorthand(value: string): boolean {
+  if (/^-?\d*\.?\d+$/.test(value)) {
+    return true;
+  }
+  if (!/^(["'`]).*\1$/s.test(value)) {
+    return false;
+  }
+  const rest = value
+    .slice(1, -1)
+    .replace(/\$\{[^}]*\}/g, '0')
+    .replace(/var\((?:[^()]|\([^()]*\))*\)/g, ' ');
+  return rest.split(/[\s,]+/).filter(Boolean).every((token) => SHORTHAND_TOKEN.test(token));
 }
 
 const CHECKS: Check[] = [
@@ -60,14 +91,32 @@ const CHECKS: Check[] = [
     // las propiedades de color solo aceptan var(--…). En CSS y SCSS los colores
     // los controla Stylelint.
     name: 'colores fuera de var(--…) en objetos de estilo',
-    pattern: /(?<=(?:style=\{\{|CSSProperties\s*=\s*\{)[^{}]*)(?<![\w-])(["']?)(?:color|backgroundColor|border(?:Top|Right|Bottom|Left|Block|Inline)?(?:Start|End)?Color|outlineColor|fill|stroke)\1\s*:(?!\s*["'`]var\(--)[^,}\n]*/g,
+    pattern: new RegExp(
+      `${styleKey('color|background|backgroundColor|border(?:Top|Right|Bottom|Left|Block|Inline)?(?:Start|End)?Color|outlineColor|fill|stroke')}(?!\\s*["'\`]var\\(--)[^,}\\n]*`,
+      'g',
+    ),
     ignoreComments: true,
     hint: "usa var(--bs-*) de Dynamic, por ejemplo color: 'var(--bs-body-color)'",
     extensions: ['.ts', '.tsx'],
   },
   {
-    name: 'font-family',
-    pattern: /font-?[Ff]amily["']?\s*[:=]/g,
+    // Los shorthands que llevan color (border, outline, sombras) solo admiten
+    // medidas, palabras clave y var(--…), por ejemplo
+    // border: '1px solid var(--bs-border-color)'.
+    name: 'colores en shorthands de objetos de estilo',
+    pattern: new RegExp(
+      `${styleKey('border(?:Top|Right|Bottom|Left|Block|Inline)?(?:Start|End)?|outline|boxShadow|textShadow')}\\s*("[^"]*"|'[^']*'|\`[^\`]*\`|[^,}\\n]*)`,
+      'g',
+    ),
+    ignoreComments: true,
+    hint: "el color va con var(--bs-*), por ejemplo border: '1px solid var(--bs-border-color)'",
+    extensions: ['.ts', '.tsx'],
+    allow: (match) => isTokenShorthand(match[2].trim()),
+  },
+  {
+    // font-family en cualquier archivo; el shorthand font, en objetos de estilo.
+    name: 'font-family ni font',
+    pattern: new RegExp(`font-?[Ff]amily["']?\\s*[:=]|${styleKey('font')}`, 'g'),
     ignoreComments: false,
     hint: 'la tipografía viene del theme; usa las clases fs-* y fw-* de Dynamic',
   },
@@ -96,13 +145,15 @@ const CHECKS: Check[] = [
   },
 ];
 
-function findViolations({ pattern, ignoreComments, extensions }: Check): string[] {
+function findViolations({
+  pattern, ignoreComments, extensions, allow,
+}: Check): string[] {
   return files.flatMap(({ file, source }) => {
     if (extensions && !extensions.some((ext) => file.endsWith(ext))) {
       return [];
     }
     const text = ignoreComments ? stripComments(source) : source;
-    return [...text.matchAll(pattern)].map((match) => {
+    return [...text.matchAll(pattern)].filter((match) => !allow?.(match)).map((match) => {
       const line = text.slice(0, match.index).split('\n').length;
       return `${file}:${line}  ${match[0]}`;
     });
