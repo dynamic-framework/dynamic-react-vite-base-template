@@ -20,7 +20,7 @@ Template base para crear widgets con Dynamic Framework usando Vite.
 
 - Node.js 22.13+, 24.x o 26+ (`engines` en `package.json`; `.nvmrc` fija la 22).
   Las líneas impares (23.x, 25.x) no están soportadas: son non-LTS, varias
-  dependencias de desarrollo (ESLint, jsdom) excluyen la 23.x de su `engines`
+  dependencias de desarrollo (`eslint-plugin-jsonc`, `jsdom`) excluyen la 23.x de su `engines`
   y `vitest` excluye la 23.x y la 25.x.
 
 ## Inicio Rápido
