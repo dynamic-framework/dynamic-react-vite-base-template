@@ -19,16 +19,17 @@ Template base para crear widgets con Dynamic Framework usando Vite.
 ## Requisitos
 
 - Node.js 22.13+, 24.x o 26+ (`engines` en `package.json`; `.nvmrc` fija la 22).
-  Las líneas impares (23.x, 25.x) no están soportadas: son non-LTS y varias
-  dependencias las excluyen de su `engines`.
+  Las líneas impares (23.x, 25.x) no están soportadas: son non-LTS, varias
+  dependencias de desarrollo (ESLint, jsdom) excluyen la 23.x de su `engines`
+  y `vitest` excluye la 23.x y la 25.x.
 
 ## Inicio Rápido
 
 Un widget nuevo parte de la versión publicada del template, con una historia de git propia:
 
 ```bash
-# Clonar la versión 1.4.0 del template
-git clone --depth 1 --branch v1.4.0 https://github.com/dynamic-framework/dynamic-react-vite-base-template.git mi-widget
+# Clonar la versión 1.4.1 del template
+git clone --depth 1 --branch v1.4.1 https://github.com/dynamic-framework/dynamic-react-vite-base-template.git mi-widget
 cd mi-widget
 
 # Empezar una historia propia
@@ -40,7 +41,7 @@ npm ci
 npm run dev
 ```
 
-> El botón **Use this template** de GitHub copia la rama por defecto del repositorio, no una versión publicada. Para partir de una versión concreta, usa el `git clone --branch v1.4.0` de arriba.
+> El botón **Use this template** de GitHub copia la rama por defecto del repositorio, no una versión publicada. Para partir de una versión concreta, usa el `git clone --branch v1.4.1` de arriba.
 
 Después, en el widget nuevo:
 

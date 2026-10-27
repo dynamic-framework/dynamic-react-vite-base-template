@@ -1,8 +1,8 @@
 {
   "name": "@dynamic-framework/dynamic-react-vite-base-template",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "dynamicUi": "2.12.1",
-  "template": "@dynamic-framework/dynamic-react-vite-base-template@1.4.0",
+  "template": "@dynamic-framework/dynamic-react-vite-base-template@1.4.1",
   "theme": null,
   "design": []
 }
