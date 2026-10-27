@@ -59,7 +59,17 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: `$widget-name: "${WIDGET_NAME}";\n`,
+        // Módulo virtual con el nombre del widget: `@use "widget" as *;`.
+        // No se usa additionalData porque solo alcanza a los archivos que
+        // importa el JS, no a los parciales que Sass carga con @use, y este
+        // proyecto dirige a @use para los parciales propios.
+        importers: [{
+          canonicalize: (url: string) => (url === 'widget' ? new URL('widget:name') : null),
+          load: () => ({
+            contents: `$widget-name: "${WIDGET_NAME}";`,
+            syntax: 'scss' as const,
+          }),
+        }],
         quietDeps: true,
         silenceDeprecations: ['legacy-js-api'],
       },

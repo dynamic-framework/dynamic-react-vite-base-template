@@ -1,10 +1,11 @@
 // Estilos propios del widget. Colores, tipografía y radios vienen de Dynamic
 // y del theme del sitio: usa var(--bs-*) y clases con el prefijo del widget.
 //
-// El prefijo NO se escribe a mano: `$widget-name` lo inyecta Vite desde "name"
-// de package.json (ver .vite/widgetName.ts). Así el nombre real —que lleva un
-// sufijo para que dos widgets no choquen— nunca aparece en el código, y
-// renombrar package.json no obliga a tocar este archivo.
+// El prefijo NO se escribe a mano: `@use "widget" as *;` trae `$widget-name`,
+// derivado de "name" en package.json (ver .vite/widgetName.ts). Hace falta en
+// cada archivo de estilos, parciales incluidos.
+@use "widget" as *;
+
 .#{$widget-name} {
   background-color: rgb(var(--bs-secondary-soft-rgb));
 }

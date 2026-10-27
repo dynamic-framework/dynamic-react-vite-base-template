@@ -28,8 +28,8 @@ Template base para crear widgets con Dynamic Framework usando Vite.
 Un widget nuevo parte de la versión publicada del template, con una historia de git propia:
 
 ```bash
-# Clonar la versión 1.4.1 del template
-git clone --depth 1 --branch v1.4.1 https://github.com/dynamic-framework/dynamic-react-vite-base-template.git mi-widget
+# Clonar la versión 1.5.0 del template
+git clone --depth 1 --branch v1.5.0 https://github.com/dynamic-framework/dynamic-react-vite-base-template.git mi-widget
 cd mi-widget
 
 # Empezar una historia propia
@@ -41,7 +41,7 @@ npm ci
 npm run dev
 ```
 
-> El botón **Use this template** de GitHub copia la rama por defecto del repositorio, no una versión publicada. Para partir de una versión concreta, usa el `git clone --branch v1.4.1` de arriba.
+> El botón **Use this template** de GitHub copia la rama por defecto del repositorio, no una versión publicada. Para partir de una versión concreta, usa el `git clone --branch v1.5.0` de arriba.
 
 Después, en el widget nuevo:
 
@@ -400,14 +400,17 @@ Colores, tipografía, radios y zonas de theme vienen de Dynamic y del theme del 
 - el CSS de Dynamic, ni compilado (`dynamic-ui.css`) ni desde sus fuentes (`@dynamic-framework/ui-react/src/style/...`);
 - selectores `[data-bs-theme]`, con o sin valor: el widget solo pone el atributo en el JSX.
 
-Las clases propias se escriben con la variable inyectada: `.#{$widget-name}`, `.#{$widget-name}__bloque` o `.#{$widget-name}__bloque--variante`. Vite define `$widget-name` en todos los `.scss` a partir de `name` en `package.json` (ver [Punto de montaje](#punto-de-montaje)), así que **el nombre real nunca se escribe a mano** y renombrar el paquete no obliga a tocar ningún estilo. Si escribes una clase literal, `stylelint.config.ts` la rechaza y te recuerda la forma correcta.
+Las clases propias se escriben con la variable del módulo `widget`: `.#{$widget-name}`, `.#{$widget-name}__bloque` o `.#{$widget-name}__bloque--variante`. **Cada archivo de estilos lo carga con `@use "widget" as *;`**, parciales incluidos — es un módulo virtual que Vite resuelve desde `name` en `package.json` (ver [Punto de montaje](#punto-de-montaje)). Así **el nombre real nunca se escribe a mano** y renombrar el paquete no obliga a tocar ningún estilo. Si escribes una clase literal, `stylelint.config.ts` la rechaza y te recuerda la forma correcta.
+
+En TSX el mismo valor llega por `import.meta.env.VITE_WIDGET_NAME`.
 
 Correcto:
 
 ```scss
 @use "@dynamic-framework/ui-react/src/style/abstracts/+import" as df;
+@use "widget" as *;
 
-.widget-name__summary {
+.#{$widget-name}__summary {
   color: var(--bs-body-color);
   background-color: rgba(var(--bs-primary-rgb), .1);
 
@@ -418,7 +421,9 @@ Correcto:
 ```
 
 ```tsx
-<div className="widget-name__summary rounded-2 fs-5" data-bs-theme="dark">
+const widget = import.meta.env.VITE_WIDGET_NAME;
+
+<div className={`${widget}__summary rounded-2 fs-5`} data-bs-theme="dark">
 ```
 
 Incorrecto:
