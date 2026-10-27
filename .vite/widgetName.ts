@@ -24,8 +24,22 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
  * valor de `data-widget`, como `id` y como clase CSS.
  *
  * El scope se pliega en lugar de descartarse (`@acme/checkout` →
- * `acme-checkout`): quedarse con el último segmento haría chocar de nuevo a
- * dos organizaciones que publican el mismo nombre.
+ * `acme-checkout`): quedarse con el último segmento haría chocar a dos
+ * organizaciones que publican el mismo nombre.
+ *
+ * LÍMITE CONOCIDO: la transformación tiene pérdida. `-`, `.`, `_` y `/`
+ * colapsan todos en `-`, así que un puñado de pares caen en el mismo valor
+ * (`@acme/checkout` y `acme-checkout`; `@acme/checkout-cart` y
+ * `@acme-checkout/cart`; `@a-b/c` y `@a.b/c`). Si dos widgets así comparten
+ * página, vuelven a ocuparse los contenedores entre sí.
+ *
+ * Se acepta a conciencia. Evitarlo exigiría un sufijo hash o un escape que
+ * duplique los guiones —lo segundo chocaría con el `--variante` del patrón
+ * BEM—, y las dos opciones vuelven ilegible el identificador de TODOS los
+ * widgets para cubrir un naming rebuscado. Además el fallo ya no es silencioso:
+ * el widget que se queda sin contenedor avisa por consola nombrándose, también
+ * en producción (ver src/app/main.tsx). Los pares están en
+ * tests/boundaries/widgetName.test.ts para que el límite quede registrado.
  */
 export function normalizeWidgetName(packageName: string): string {
   const normalized = packageName

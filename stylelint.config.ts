@@ -103,8 +103,10 @@ config.rules!['selector-class-pattern'] = [
   `^${WIDGET_NAME}(__${SEGMENT})?(--${SEGMENT})?$`,
   {
     message:
-      `Las clases propias siguen el patrón .${WIDGET_NAME}__bloque--variante, derivado de `
-      + '"name" en package.json. Para el resto usa las utilidades de Dynamic.',
+      'Las clases propias se escriben con la variable inyectada: '
+      + '.#{$widget-name}, .#{$widget-name}__bloque o .#{$widget-name}__bloque--variante. '
+      + `No escribas el nombre a mano (aquí sería "${WIDGET_NAME}"): cambia al renombrar `
+      + 'package.json. Para el resto usa las utilidades de Dynamic.',
   },
 ];
 

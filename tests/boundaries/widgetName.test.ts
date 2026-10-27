@@ -44,6 +44,27 @@ describe('normalizeWidgetName', () => {
       .not.toBe(normalizeWidgetName('@globex/checkout'));
   });
 
+  /**
+   * Límite conocido y aceptado: `-`, `.`, `_` y `/` colapsan todos en `-`, así
+   * que estos pares comparten nombre de montaje y, en una misma página, se
+   * ocuparían los contenedores entre sí.
+   *
+   * El test fija el comportamiento en lugar de taparlo. Evitarlo pedía un
+   * sufijo hash en el identificador de todos los widgets, demasiado precio por
+   * un naming rebuscado; y el fallo ya no es silencioso, porque el widget sin
+   * contenedor avisa por consola. Ver el comentario de normalizeWidgetName.
+   *
+   * Si alguna vez se decide cerrarlo, estos casos son la especificación: basta
+   * con invertirlos a `not.toBe`.
+   */
+  it.each([
+    ['@acme/checkout', 'acme-checkout'],
+    ['@acme/checkout-cart', '@acme-checkout/cart'],
+    ['@a-b/c', '@a.b/c'],
+  ])('LÍMITE: %s y %s caen en el mismo nombre', (one, other) => {
+    expect(normalizeWidgetName(one)).toBe(normalizeWidgetName(other));
+  });
+
   it('antepone w- cuando el nombre empieza por un dígito, que no vale como clase', () => {
     expect(normalizeWidgetName('123widget')).toBe('w-123widget');
   });
@@ -115,13 +136,18 @@ describe('estilos', () => {
     expect(regex.test('otra-clase')).toBe(false);
   });
 
-  it('la clase de base.scss concuerda con el patrón', async () => {
-    const regex = await classPattern();
-    const classes = [...read(BASE_SCSS).matchAll(/^\.([a-z0-9_-]+)/gm)].map(([, name]) => name);
+  it('base.scss usa la variable inyectada y no el nombre a mano', () => {
+    const source = read(BASE_SCSS);
 
-    expect(classes.length).toBeGreaterThan(0);
-    for (const className of classes) {
-      expect(regex.test(className), `.${className} no sigue el patrón`).toBe(true);
-    }
+    expect(source).toContain('.#{$widget-name}');
+    expect(source, 'el nombre derivado no se escribe a mano en el SCSS').not.toContain(WIDGET_NAME);
+  });
+
+  it('el patrón sigue rechazando una clase literal sin prefijo', async () => {
+    expect((await classPattern()).test('clase-cualquiera')).toBe(false);
+  });
+
+  it('Vite inyecta $widget-name en el preprocesador de SCSS', () => {
+    expect(read('vite.config.ts')).toContain('$widget-name:');
   });
 });

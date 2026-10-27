@@ -46,8 +46,7 @@ npm run dev
 Después, en el widget nuevo:
 
 1. Cambia `name` en `package.json` y en `widget.manifest.json` (deben coincidir) y fija la `version` del widget en los dos. **De `name` sale el nombre de montaje**: el `data-widget`, el `id` del contenedor y el prefijo de las clases propias se derivan de ahí (ver [Punto de montaje](#punto-de-montaje)).
-2. Renombra la clase de `src/styles/base.scss` al nuevo prefijo. `npm run stylelint` te dice cuál es: es lo único que no se deriva solo, porque interpolar el nombre en un selector SCSS rompe la regla que vigila las clases.
-3. Copia `.modyo.example` a `.modyo` y complétalo (ver [Configuración de Modyo](#configuración-de-modyo)).
+2. Copia `.modyo.example` a `.modyo` y complétalo (ver [Configuración de Modyo](#configuración-de-modyo)).
 
 ## Scripts Disponibles
 
@@ -216,7 +215,19 @@ Ejemplo de un widget creado desde el template:
 
 El widget se monta en los elementos con el atributo `data-widget="<nombre>"`, como el contenedor de `index.html`. Si no hay ninguno, se monta en el elemento con `id="<nombre>"`, de modo que el `id` sigue funcionando.
 
-`<nombre>` **se deriva de `name` en `package.json`**, plegando el scope y pasando a kebab: `@acme/checkout` monta en `acme-checkout`. Vive en un solo sitio (`.vite/widgetName.ts`) y llega a `src/` como `import.meta.env.VITE_WIDGET_NAME` y a `index.html` como `%VITE_WIDGET_NAME%`. No hay valor por defecto a propósito: un respaldo sería el mismo en todos los widgets creados del template, y **dos widgets que compartan nombre de montaje se ocupan los contenedores entre sí** — el primer bundle que se ejecuta ocupa también los del otro, y el segundo no aparece. `tests/boundaries/widgetName.test.ts` comprueba que todos los sitios siguen de acuerdo.
+`<nombre>` **se deriva de `name` en `package.json`**, plegando el scope y pasando a kebab: `@acme/checkout` monta en `acme-checkout`. El scope se pliega en vez de descartarse para que dos organizaciones con el mismo basename no choquen. Vive en un solo sitio (`.vite/widgetName.ts`) y llega a `src/` como `import.meta.env.VITE_WIDGET_NAME`, a `index.html` como `%VITE_WIDGET_NAME%` y a los `.scss` como `$widget-name`.
+
+No hay valor por defecto, a propósito: un respaldo sería el mismo en todos los widgets creados del template, y **dos widgets que compartan nombre de montaje se ocupan los contenedores entre sí** — el primer bundle que se ejecuta ocupa también los del otro, y el segundo no aparece. Si eso ocurre, el widget que se queda sin contenedor avisa por consola nombrándose, también en producción.
+
+Nunca hace falta escribir el nombre a mano:
+
+| Dónde | Cómo |
+|---|---|
+| SCSS | `.#{$widget-name}` — Vite inyecta la variable en todos los `.scss` |
+| TS/TSX | `import.meta.env.VITE_WIDGET_NAME` |
+| Un contenedor a mano en Modyo | cópialo de `dist/index.html` tras `npm run build` |
+
+Si escribes una clase literal, `npm run stylelint` falla y te recuerda la forma correcta. `tests/boundaries/widgetName.test.ts` comprueba que todos los sitios siguen de acuerdo.
 
 Para montar varias instancias en una misma página, cada contenedor lleva el mismo `data-widget` y cada uno recibe su propia instancia. **Repite solo el `data-widget`, no el `id`**: el `id` tiene que ser único en el documento.
 
@@ -389,7 +400,7 @@ Colores, tipografía, radios y zonas de theme vienen de Dynamic y del theme del 
 - el CSS de Dynamic, ni compilado (`dynamic-ui.css`) ni desde sus fuentes (`@dynamic-framework/ui-react/src/style/...`);
 - selectores `[data-bs-theme]`, con o sin valor: el widget solo pone el atributo en el JSX.
 
-Las clases propias siguen el patrón `.<nombre>__bloque--variante`, donde `<nombre>` se deriva de `name` en `package.json` (ver [Punto de montaje](#punto-de-montaje)). El `selector-class-pattern` de `stylelint.config.ts` se construye desde ese mismo valor, así que al renombrar `package.json` **Stylelint exige el renombre de la clase en `src/styles/base.scss`** y te dice cuál debe ser. En `index.html` la clase del contenedor ya se deriva sola.
+Las clases propias se escriben con la variable inyectada: `.#{$widget-name}`, `.#{$widget-name}__bloque` o `.#{$widget-name}__bloque--variante`. Vite define `$widget-name` en todos los `.scss` a partir de `name` en `package.json` (ver [Punto de montaje](#punto-de-montaje)), así que **el nombre real nunca se escribe a mano** y renombrar el paquete no obliga a tocar ningún estilo. Si escribes una clase literal, `stylelint.config.ts` la rechaza y te recuerda la forma correcta.
 
 Correcto:
 

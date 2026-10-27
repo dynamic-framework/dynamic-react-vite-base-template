@@ -59,6 +59,7 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
+        additionalData: `$widget-name: "${WIDGET_NAME}";\n`,
         quietDeps: true,
         silenceDeprecations: ['legacy-js-api'],
       },
