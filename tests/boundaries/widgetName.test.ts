@@ -29,25 +29,45 @@ function read(file: string): string {
   return readFileSync(path.join(ROOT, file), 'utf8');
 }
 
-/** Sustituye los comentarios por espacios, conservando las posiciones. */
-function stripComments(scss: string): string {
-  return scss
-    .replace(/\/\*[\s\S]*?\*\//g, (text) => text.replace(/[^\n]/g, ' '))
-    .replace(/\/\/[^\n]*/g, (text) => text.replace(/./g, ' '));
+const BASE_SCSS = 'src/styles/base.scss';
+
+/** Patrón que ninguna clase literal puede cumplir. */
+const NO_LITERAL = '^(?!)';
+
+/** El config de Stylelint del proyecto, que trae el parser de SCSS. */
+async function projectConfig(): Promise<stylelint.Config> {
+  const config = await stylelint.resolveConfig(path.join(ROOT, BASE_SCSS));
+
+  if (!config) {
+    throw new Error('Stylelint no resolvió configuración para ' + BASE_SCSS);
+  }
+
+  return config;
 }
 
 /**
- * Selectores de clase escritos como literal, es decir sin interpolación.
+ * Clases escritas como literal, es decir sin interpolación `#{…}`.
  *
- * Mira solo los selectores y descarta los comentarios: buscar el nombre
- * derivado como subcadena daba falsos positivos: un paquete llamado
- * `widget-name` hace que `.#{$widget-name}` contenga su propio nombre, y uno
- * llamado `widget` aparece además dentro de `@use "widget"` y de cualquier
- * comentario que lo mencione.
+ * Lo resuelve Stylelint en lugar de un parser propio: ya es dependencia, ya
+ * sabe leer SCSS y ya distingue un nodo de clase del resto. Se le pasa el
+ * config del proyecto —de ahí sale el parser— con `selector-class-pattern`
+ * sustituido por un patrón imposible, así que avisa de toda clase literal y
+ * calla ante las interpoladas, que no evalúa.
+ *
+ * Buscar por texto no servía: `content: ".pdf"` parece una clase y no lo es, y
+ * en `div.acme-checkout` la clase va pegada a una etiqueta.
  */
-export function literalClassSelectors(scss: string): string[] {
-  return [...stripComments(scss).matchAll(/(?<![\w#{])\.([a-zA-Z_][\w-]*)/g)]
-    .map(([, name]) => name);
+export async function literalClassSelectors(scss: string): Promise<string[]> {
+  const config = await projectConfig();
+  const { results } = await stylelint.lint({
+    code: scss,
+    codeFilename: 'probe.scss',
+    config: { ...config, rules: { ...config.rules, 'selector-class-pattern': NO_LITERAL } },
+  });
+
+  return results[0].warnings
+    .filter((warning) => warning.rule === 'selector-class-pattern')
+    .map((warning) => warning.text.match(/"\.([^"]+)"/)?.[1] ?? warning.text);
 }
 
 const WIDGET_NAME = resolveWidgetName(ROOT);
@@ -134,15 +154,13 @@ describe('src/app/main.tsx', () => {
 });
 
 describe('estilos', () => {
-  const BASE_SCSS = 'src/styles/base.scss';
-
   /**
    * Se resuelve con la API de Stylelint en lugar de importar el archivo de
    * configuración, para comprobar el patrón que Stylelint aplica de verdad.
    */
   async function classPattern(): Promise<RegExp> {
-    const config = await stylelint.resolveConfig(path.join(ROOT, BASE_SCSS));
-    const rule = config?.rules?.['selector-class-pattern'];
+    const config = await projectConfig();
+    const rule = config.rules?.['selector-class-pattern'];
     const source = Array.isArray(rule) ? rule[0] : rule;
 
     expect(typeof source, 'selector-class-pattern debe ser una cadena').toBe('string');
@@ -165,8 +183,8 @@ describe('estilos', () => {
     expect(read(BASE_SCSS)).toMatch(/@use\s+["']widget["']/);
   });
 
-  it('base.scss escribe las clases con la variable, no a mano', () => {
-    expect(literalClassSelectors(read(BASE_SCSS))).toEqual([]);
+  it('base.scss escribe las clases con la variable, no a mano', async () => {
+    expect(await literalClassSelectors(read(BASE_SCSS))).toEqual([]);
   });
 
   /**
@@ -180,13 +198,19 @@ describe('estilos', () => {
    * visto.
    */
   it('el módulo widget también llega a un parcial cargado con @use', async () => {
+    // Las fixtures van al temporal, no a src/. styleBoundaries.test.ts y
+    // architecture.test.ts recorren src/ con readdir + stat, y vitest corre
+    // los archivos de test en paralelo: crear y borrar ahí haría fallar a esos
+    // dos de forma intermitente con ENOENT. El input del build es absoluto,
+    // así que la entrada puede vivir fuera de la raíz del proyecto.
     const dir = mkdtempSync(path.join(tmpdir(), 'widget-partial-'));
     const outDir = path.join(dir, 'dist');
-    const stylesDir = path.join(ROOT, 'src', 'styles');
-    const partial = path.join(stylesDir, '_boundary-probe.scss');
-    const entry = path.join(stylesDir, 'boundary-entry.scss');
+    const entry = path.join(dir, 'boundary-entry.scss');
 
-    writeFileSync(partial, '@use "widget" as *;\n\n.#{$widget-name}__sonda { display: block; }\n');
+    writeFileSync(
+      path.join(dir, '_boundary-probe.scss'),
+      '@use "widget" as *;\n\n.#{$widget-name}__sonda { display: block; }\n',
+    );
     writeFileSync(entry, '@use "boundary-probe";\n');
 
     try {
@@ -209,34 +233,41 @@ describe('estilos', () => {
 
       expect(css).toContain(`.${WIDGET_NAME}__sonda`);
     } finally {
-      rmSync(partial, { force: true });
-      rmSync(entry, { force: true });
       rmSync(dir, { recursive: true, force: true });
     }
   }, 60_000);
 });
 
 describe('literalClassSelectors', () => {
-  it('no ve la interpolación como literal', () => {
-    expect(literalClassSelectors('.#{$widget-name}__fila { display: flex; }')).toEqual([]);
+  it('no ve la interpolación como literal', async () => {
+    expect(await literalClassSelectors('.#{$widget-name}__fila { display: flex; }')).toEqual([]);
   });
 
-  it('sí ve una clase escrita a mano', () => {
-    expect(literalClassSelectors('.mi-clase { display: block; }')).toEqual(['mi-clase']);
+  it('sí ve una clase escrita a mano', async () => {
+    expect(await literalClassSelectors('.mi-clase { display: block; }')).toEqual(['mi-clase']);
   });
 
-  it('ignora los comentarios', () => {
-    expect(literalClassSelectors('// usa .#{$widget-name}\n/* y no .otra */\n')).toEqual([]);
+  it('no confunde el valor de una declaración con una clase', async () => {
+    expect(await literalClassSelectors('.#{$widget-name}::after { content: ".pdf"; }')).toEqual([]);
   });
 
-  /** El caso del reporte: un paquete llamado como la propia variable. */
-  it('no falla cuando el paquete se llama widget-name', () => {
+  it('ve una clase literal pegada a una etiqueta', async () => {
+    expect(await literalClassSelectors('div.acme-checkout { display: block; }')).toEqual(['acme-checkout']);
+  });
+
+  it('ignora los comentarios', async () => {
+    expect(await literalClassSelectors('// .comentada\n/* .otra */\n.#{$widget-name} {}')).toEqual([]);
+  });
+
+  it('entra en los selectores anidados y en las at-rules', async () => {
+    expect(await literalClassSelectors('@media (min-width: 0) { .dentro {} }')).toEqual(['dentro']);
+    expect(await literalClassSelectors('.a, .b .c { color: red; }')).toEqual(['a', 'b', 'c']);
+  });
+
+  /** El caso del reporte anterior: un paquete llamado como la propia variable. */
+  it('no falla cuando el paquete se llama widget-name', async () => {
     const scss = '@use "widget" as *;\n\n.#{$widget-name} { color: red; }\n';
 
-    expect(literalClassSelectors(scss)).toEqual([]);
-  });
-
-  it('tampoco cuando el paquete se llama widget', () => {
-    expect(literalClassSelectors('@use "widget" as *;\n.#{$widget-name} {}')).toEqual([]);
+    expect(await literalClassSelectors(scss)).toEqual([]);
   });
 });
