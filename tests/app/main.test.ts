@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// El nombre de montaje se deriva de package.json, así que el fixture lo toma
+// de la misma fuente en lugar de repetir un literal.
+const WIDGET_NAME = import.meta.env.VITE_WIDGET_NAME;
+
 const { createRoot } = vi.hoisted(() => ({
   createRoot: vi.fn(() => ({ render: vi.fn() })),
 }));
@@ -23,7 +27,7 @@ describe('montaje en src/app/main.tsx', () => {
   beforeEach(() => {
     vi.resetModules();
     createRoot.mockClear();
-    document.body.innerHTML = '<div data-widget="widgetName"></div>';
+    document.body.innerHTML = `<div data-widget="${WIDGET_NAME}"></div>`;
   });
 
   afterEach(() => {
@@ -43,7 +47,7 @@ describe('montaje en src/app/main.tsx', () => {
     expect(createRoot).toHaveBeenCalledTimes(1);
     expect(document.querySelector('[data-widget]')).toHaveAttribute('data-mounted');
 
-    document.body.insertAdjacentHTML('beforeend', '<div data-widget="widgetName"></div>');
+    document.body.insertAdjacentHTML('beforeend', `<div data-widget="${WIDGET_NAME}"></div>`);
     document.dispatchEvent(new Event('DOMContentLoaded'));
 
     expect(createRoot).toHaveBeenCalledTimes(1);

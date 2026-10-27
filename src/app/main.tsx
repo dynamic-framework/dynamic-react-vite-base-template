@@ -9,12 +9,27 @@ import { resolveMountTargets } from './mountTargets';
 
 import '@/styles/base.scss';
 
-const WIDGET_NAME = 'widgetName';
+/**
+ * El nombre de montaje lo inyecta Vite desde `name` de package.json (ver
+ * .vite/widgetName.ts). No hay respaldo literal a propósito: un valor por
+ * defecto volvería a ser el mismo en todos los widgets creados del template, y
+ * dos de ellos en una página se ocuparían los contenedores entre sí.
+ */
+const WIDGET_NAME = import.meta.env.VITE_WIDGET_NAME;
+
+if (!WIDGET_NAME) {
+  throw new Error(
+    'Falta import.meta.env.VITE_WIDGET_NAME: el nombre de montaje lo inyecta el define de '
+    + 'vite.config.ts. Si compilas fuera de la configuración del proyecto, defínelo ahí.',
+  );
+}
 
 function mount() {
   const targets = resolveMountTargets(document, WIDGET_NAME);
 
-  if (targets.length === 0 && import.meta.env.DEV) {
+  // El aviso también sale en producción: sin él, un widget que no encuentra su
+  // contenedor no deja ningún rastro en consola.
+  if (targets.length === 0) {
     console.warn(`No se encontró contenedor para el widget "${WIDGET_NAME}".`);
   }
 

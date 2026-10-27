@@ -18,7 +18,10 @@ Template base para crear widgets con Dynamic Framework usando Vite.
 
 ## Requisitos
 
-- Node.js 22.13+, 24.x o 26+ (`engines` en `package.json`; `.nvmrc` fija la 22).
+- Node.js 22.18+, 24.x o 26+ (`engines` en `package.json`; `.nvmrc` fija la 22).
+  Las líneas impares (23.x, 25.x) quedan fuera: son non-LTS y varias dependencias
+  las excluyen. El piso es 22.18 y no 22.13 porque `stylelint.config.ts` importa
+  un módulo TypeScript, y Node carga `.ts` sin flag solo desde esa versión.
 
 ## Inicio Rápido
 
@@ -42,10 +45,9 @@ npm run dev
 
 Después, en el widget nuevo:
 
-1. Cambia `name` en `package.json` y en `widget.manifest.json` (deben coincidir) y fija la `version` del widget en los dos.
-2. Cambia el nombre de montaje `widgetName`: la constante `WIDGET_NAME` de `src/app/main.tsx` y el `data-widget` del contenedor de `index.html` (ver [Punto de montaje](#punto-de-montaje)).
-3. Cambia la clase `widget-name` en `index.html`, `src/styles/base.scss` y `selector-class-pattern` de `.stylelintrc` (ver [Estilos](#estilos-qué-lleva-el-widget-y-qué-pone-el-sitio)).
-4. Copia `.modyo.example` a `.modyo` y complétalo (ver [Configuración de Modyo](#configuración-de-modyo)).
+1. Cambia `name` en `package.json` y en `widget.manifest.json` (deben coincidir) y fija la `version` del widget en los dos. **De `name` sale el nombre de montaje**: el `data-widget`, el `id` del contenedor y el prefijo de las clases propias se derivan de ahí (ver [Punto de montaje](#punto-de-montaje)).
+2. Renombra la clase de `src/styles/base.scss` al nuevo prefijo. `npm run stylelint` te dice cuál es: es lo único que no se deriva solo, porque interpolar el nombre en un selector SCSS rompe la regla que vigila las clases.
+3. Copia `.modyo.example` a `.modyo` y complétalo (ver [Configuración de Modyo](#configuración-de-modyo)).
 
 ## Scripts Disponibles
 
@@ -212,7 +214,11 @@ Ejemplo de un widget creado desde el template:
 
 ## Punto de montaje
 
-El widget se monta en los elementos con el atributo `data-widget="widgetName"`, como el contenedor de `index.html`. Si no hay ninguno, se monta en el elemento con `id="widgetName"`, de modo que el `id` sigue funcionando. El nombre se define en la constante `WIDGET_NAME` de `src/app/main.tsx` y es lo que se cambia al crear un widget desde este template. Para montar varias instancias en una misma página, cada contenedor lleva el mismo `data-widget` y cada uno recibe su propia instancia.
+El widget se monta en los elementos con el atributo `data-widget="<nombre>"`, como el contenedor de `index.html`. Si no hay ninguno, se monta en el elemento con `id="<nombre>"`, de modo que el `id` sigue funcionando.
+
+`<nombre>` **se deriva de `name` en `package.json`**, plegando el scope y pasando a kebab: `@acme/checkout` monta en `acme-checkout`. Vive en un solo sitio (`.vite/widgetName.ts`) y llega a `src/` como `import.meta.env.VITE_WIDGET_NAME` y a `index.html` como `%VITE_WIDGET_NAME%`. No hay valor por defecto a propósito: un respaldo sería el mismo en todos los widgets creados del template, y **dos widgets que compartan nombre de montaje se ocupan los contenedores entre sí** — el primer bundle que se ejecuta ocupa también los del otro, y el segundo no aparece. `tests/boundaries/widgetName.test.ts` comprueba que todos los sitios siguen de acuerdo.
+
+Para montar varias instancias en una misma página, cada contenedor lleva el mismo `data-widget` y cada uno recibe su propia instancia. **Repite solo el `data-widget`, no el `id`**: el `id` tiene que ser único en el documento.
 
 La búsqueda de contenedores espera a `DOMContentLoaded` cuando el documento aún se está cargando, de modo que `main.js` funciona igual enlazado en el `<head>` que al final del `<body>`.
 
@@ -257,7 +263,7 @@ Para que `main.js` pese menos, lo que funciona es no importar lo que la página 
 El template incluye:
 
 - **ESLint**: linting de TypeScript/React (flat config, `eslint.config.js`).
-- **Stylelint**: linting de CSS/SCSS (`stylelint-config-twbs-bootstrap` y reglas propias en `.stylelintrc`).
+- **Stylelint**: linting de CSS/SCSS (`stylelint-config-twbs-bootstrap` y reglas propias en `stylelint.config.ts`).
 - **Husky**: hooks de git. `pre-commit` ejecuta lint-staged y `commit-msg` ejecuta Commitlint.
 - **lint-staged**: `eslint --fix` sobre los `.ts`/`.tsx` de `src/` y `src/config/*.json`, y `stylelint --fix` sobre los `.scss` de `src/`, solo en los archivos staged.
 - **Commitlint**: mensajes con conventional commits; los tipos admitidos son `feat`, `fix`, `docs`, `chore`, `style`, `refactor` y `test`.
@@ -383,7 +389,7 @@ Colores, tipografía, radios y zonas de theme vienen de Dynamic y del theme del 
 - el CSS de Dynamic, ni compilado (`dynamic-ui.css`) ni desde sus fuentes (`@dynamic-framework/ui-react/src/style/...`);
 - selectores `[data-bs-theme]`, con o sin valor: el widget solo pone el atributo en el JSX.
 
-Las clases propias siguen el patrón `.widget-name__bloque--variante`. Al crear tu widget, renombra `widget-name` en `index.html`, `src/styles/base.scss` y `selector-class-pattern` de `.stylelintrc`.
+Las clases propias siguen el patrón `.<nombre>__bloque--variante`, donde `<nombre>` se deriva de `name` en `package.json` (ver [Punto de montaje](#punto-de-montaje)). El `selector-class-pattern` de `stylelint.config.ts` se construye desde ese mismo valor, así que al renombrar `package.json` **Stylelint exige el renombre de la clase en `src/styles/base.scss`** y te dice cuál debe ser. En `index.html` la clase del contenedor ya se deriva sola.
 
 Correcto:
 

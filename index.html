@@ -16,7 +16,10 @@
 </head>
 
 <body>
-  <div id="widgetName" data-widget="widgetName" class="widget-name"></div>
+  <!-- El nombre sale de "name" en package.json; ver .vite/widgetName.ts.
+       Para montar otra instancia en la misma página, repite el div con su
+       data-widget y SIN el id: el id tiene que ser único en el documento. -->
+  <div id="%VITE_WIDGET_NAME%" data-widget="%VITE_WIDGET_NAME%" class="%VITE_WIDGET_NAME%"></div>
   <script type="module" src="/src/app/main.tsx"></script>
 </body>
 

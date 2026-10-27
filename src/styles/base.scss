@@ -1,5 +1,8 @@
 // Estilos propios del widget. Colores, tipografía y radios vienen de Dynamic
-// y del theme del sitio: usa var(--bs-*) y clases con el prefijo .widget-name.
-.widget-name {
+// y del theme del sitio: usa var(--bs-*) y clases con el prefijo del widget.
+//
+// El prefijo sale de "name" en package.json: al renombrarlo, Stylelint exige
+// renombrar también esta clase (ver stylelint.config.js).
+.dynamic-framework-dynamic-react-vite-base-template {
   background-color: rgb(var(--bs-secondary-soft-rgb));
 }

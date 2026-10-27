@@ -1,7 +1,7 @@
 {
   "name": "@dynamic-framework/dynamic-react-vite-base-template",
   "private": true,
-  "version": "1.4.1",
+  "version": "1.5.0",
   "type": "module",
   "scripts": {
     "start": "vite",
@@ -62,6 +62,6 @@
     "vitest": "^5.0.5"
   },
   "engines": {
-    "node": "^22.13.0 || ^24.0.0 || >=26.0.0"
+    "node": "^22.18.0 || ^24.0.0 || >=26.0.0"
   }
 }

@@ -4,6 +4,23 @@ import svgr from 'vite-plugin-svgr';
 import { defineConfig } from 'vitest/config';
 import escapeLiquidInStrings from './.vite/plugins/escapeLiquidInStrings';
 import lucideSubset from './.vite/plugins/lucideSubset';
+import { readPackageName, readTemplatePackageName, resolveWidgetName } from './.vite/widgetName';
+
+// Nombre de montaje del widget, derivado de package.json. Llega a src/ como
+// import.meta.env.VITE_WIDGET_NAME y a index.html como %VITE_WIDGET_NAME%.
+const WIDGET_NAME = resolveWidgetName();
+
+// Un widget creado del template y no renombrado monta con el mismo nombre que
+// todos los demás: dos de ellos en una página se pisan los contenedores.
+const TEMPLATE_PACKAGE_NAME = readTemplatePackageName();
+
+if (readPackageName() === TEMPLATE_PACKAGE_NAME) {
+  console.warn(
+    `[widget] package.json todavía se llama "${TEMPLATE_PACKAGE_NAME}", así que el widget monta `
+    + `en "${WIDGET_NAME}". Renombra "name" en package.json antes de publicar: dos widgets que `
+    + 'compartan nombre de montaje se ocupan los contenedores entre sí.',
+  );
+}
 
 export default defineConfig({
   plugins: [
@@ -70,6 +87,9 @@ export default defineConfig({
         format: 'iife',
       },
     },
+  },
+  define: {
+    'import.meta.env.VITE_WIDGET_NAME': JSON.stringify(WIDGET_NAME),
   },
   test: {
     globals: true,

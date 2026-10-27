@@ -1,16 +1,28 @@
-{
+import type { Config } from 'stylelint';
+
+import { resolveWidgetName } from './.vite/widgetName.ts';
+
+/**
+ * El patrón de clases propias se deriva de `name` en package.json, con la
+ * misma función que da el nombre de montaje del widget. Así, renombrar
+ * package.json hace que Stylelint exija el renombre de src/styles/base.scss en
+ * lugar de dejar los dos nombres divergiendo en silencio.
+ *
+ * Este archivo es .ts, y no .json, para poder importar esa función: Stylelint
+ * transpila el config y Node resuelve el import (de ahí la extensión .ts
+ * explícita, que Node ESM necesita).
+ */
+
+const WIDGET_NAME = resolveWidgetName();
+const SEGMENT = '[a-z0-9]+(-[a-z0-9]+)*';
+
+const config: Config = {
   "extends": [
     "stylelint-config-twbs-bootstrap"
   ],
   "reportInvalidScopeDisables": true,
   "reportNeedlessDisables": true,
   "rules": {
-    "selector-class-pattern": [
-      "^widget-name(__[a-z0-9]+(-[a-z0-9]+)*)?(--[a-z0-9]+(-[a-z0-9]+)*)?$",
-      {
-        "message": "Las clases propias siguen el patrón .widget-name__bloque--variante (renombra widget-name al nombre de tu widget). Para el resto usa las utilidades de Dynamic."
-      }
-    ],
     "color-no-hex": [
       true,
       {
@@ -85,4 +97,15 @@
       }
     }
   ]
-}
+};
+
+config.rules!['selector-class-pattern'] = [
+  `^${WIDGET_NAME}(__${SEGMENT})?(--${SEGMENT})?$`,
+  {
+    message:
+      `Las clases propias siguen el patrón .${WIDGET_NAME}__bloque--variante, derivado de `
+      + '"name" en package.json. Para el resto usa las utilidades de Dynamic.',
+  },
+];
+
+export default config;
