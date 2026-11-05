@@ -57,7 +57,8 @@
       "title": "Entidades",
       "create": "Crear",
       "empty": "No hay entidades para mostrar",
-      "error": "No se pudieron cargar las entidades"
+      "error": "No se pudieron cargar las entidades",
+      "search": "Buscar entidades"
     },
     "create": {
       "title": "Nueva entidad",

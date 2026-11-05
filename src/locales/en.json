@@ -57,7 +57,8 @@
       "title": "Entities",
       "create": "Create",
       "empty": "No entities to display",
-      "error": "Could not load entities"
+      "error": "Could not load entities",
+      "search": "Search entities"
     },
     "create": {
       "title": "New entity",
