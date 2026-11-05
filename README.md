@@ -89,6 +89,7 @@ El código se organiza por dominio: cada dominio es una feature con todas sus ca
 ├── tests/                   # Espejo de src/, más boundaries/ y vite-plugins/
 ├── .vite/plugins/           # Plugins de build: escapeLiquidInStrings y lucideSubset
 ├── docs/recipes/            # Recetas de módulos opcionales
+├── eslint/dynamic-a11y/     # Plugin ESLint de accesibilidad (contrato de props de Dynamic)
 ├── index.html               # Página de desarrollo
 ├── widget.manifest.json     # Manifiesto del widget
 ├── vite.config.ts           # Configuración de Vite y Vitest
@@ -256,11 +257,20 @@ Para que `main.js` pese menos, lo que funciona es no importar lo que la página 
 
 El template incluye:
 
-- **ESLint**: linting de TypeScript/React (flat config, `eslint.config.js`).
+- **ESLint**: linting de TypeScript/React (flat config, `eslint.config.js`), con reglas de accesibilidad (ver [Accesibilidad](#accesibilidad)).
 - **Stylelint**: linting de CSS/SCSS (`stylelint-config-twbs-bootstrap` y reglas propias en `.stylelintrc`).
 - **Husky**: hooks de git. `pre-commit` ejecuta lint-staged y `commit-msg` ejecuta Commitlint.
 - **lint-staged**: `eslint --fix` sobre los `.ts`/`.tsx` de `src/` y `src/config/*.json`, y `stylelint --fix` sobre los `.scss` de `src/`, solo en los archivos staged.
 - **Commitlint**: mensajes con conventional commits; los tipos admitidos son `feat`, `fix`, `docs`, `chore`, `style`, `refactor` y `test`.
+
+### Accesibilidad
+
+ESLint revisa la accesibilidad del JSX con dos piezas, en `eslint/dynamic-a11y/`:
+
+- **jsx-a11y** sobre los elementos nativos y sobre los componentes de Dynamic que pasan sus props al elemento nativo (`DInput` como `<input>`, `DButtonIcon` como `<button>`, etc.).
+- **`dynamic-a11y/require-props`**: un contrato que exige a cada componente de Dynamic las props que necesita para tener nombre accesible y textos traducidos. Por ejemplo, `label` o `aria-label` en un `DInput`, `aria-label` en un `DButton` solo con ícono, `ariaLabel` o `<DModal.Header>` en un `DModal`, y `closeAriaLabel` con `t('...')` cuando `showClose` está activo, porque su valor por defecto está en inglés.
+
+Cada error dice qué prop falta. El contrato, cómo extenderlo a componentes propios y lo que no cubre están en [`eslint/dynamic-a11y/README.md`](eslint/dynamic-a11y/README.md). `tests/boundaries/a11yContract.test.ts` comprueba que la regla sigue aplicando en `src/`.
 
 ## Testing
 

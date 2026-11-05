@@ -46,6 +46,7 @@ export default function EntityListScreen() {
       <div className="d-flex gap-3 mb-4 align-items-end">
         <div className="flex-grow-1">
           <DInput
+            aria-label={t('entities.list.search')}
             iconStart="Search"
             placeholder={t('common.searchPlaceholder')}
             value={searchQuery}

@@ -8,6 +8,8 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
+import dynamicA11y from './eslint/dynamic-a11y/index.js';
+
 // ─── Grafo de importaciones ──────────────────────────────────────────────
 
 /** Desde fuera, una feature se usa solo por su index.ts. */
@@ -243,6 +245,19 @@ export default defineConfig([
 
   ...architectureRules(),
   ...ownFeatureRules(),
+
+  // Accesibilidad: jsx-a11y y el contrato de props de los componentes de
+  // Dynamic. Ver eslint/dynamic-a11y/README.md.
+  ...dynamicA11y.configs.recommended,
+
+  // El plugin local corre en Node.
+  {
+    files: ['eslint/**/*.js'],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
 
   // El texto visible sale de i18n (equivale a react/jsx-no-literals sobre los
   // nodos JSXText). import() no se usa en src/: el build es un único main.js
