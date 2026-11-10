@@ -1,20 +1,68 @@
 {
-  "title": "Welcome to Dynamic Framework + React",
+  "title": "Welcome to the Modyo Widget Template",
+  "siteLang": "This site is in: {lang}",
+  "home": {
+    "getStarted": "Get started by editing",
+    "links": {
+      "learn": {
+        "title": "Learn",
+        "description": "Get started with Dynamic Framework!"
+      },
+      "themes": {
+        "title": "Themes",
+        "description": "Learn how to create a unique look-and-feel!"
+      },
+      "components": {
+        "title": "Components",
+        "description": "Explore the fully React-based components"
+      }
+    }
+  },
   "states": {
     "loading": "Loading...",
     "empty": {
-      "default": "No data available"
+      "default": "No items to display"
     },
     "error": {
-      "default": "Error loading data",
+      "default": "Something went wrong",
       "retry": "Retry"
     },
     "boundary": {
-      "title": "An unexpected error occurred",
-      "description": "We're sorry, something went wrong. You can try the following options:",
+      "title": "Application error",
+      "description": "An unexpected error occurred. Please try again.",
       "retry": "Retry",
       "reload": "Reload page",
-      "details": "Technical details (development only)"
+      "details": "Show details"
+    }
+  },
+  "config": {
+    "missing": {
+      "title": "Missing configuration variables",
+      "description": "The widget needs these site variables in Modyo and they did not arrive resolved. Define them in the site variables or turn on vars.use-mocks to work with mock data."
+    }
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "searchPlaceholder": "Search...",
+    "noResults": "No results found",
+    "placeholder": "Type to filter..."
+  },
+  "entities": {
+    "list": {
+      "title": "Entities",
+      "create": "Create",
+      "empty": "No entities to display",
+      "error": "Could not load entities"
+    },
+    "create": {
+      "title": "New entity",
+      "name": "Name",
+      "error": "Could not create the entity"
     }
   }
 }

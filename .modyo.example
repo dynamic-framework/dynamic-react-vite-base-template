@@ -1,0 +1,65 @@
+# =============================================================================
+# Modyo CLI — Archivo de configuración (.modyo)
+# =============================================================================
+# Método RECOMENDADO de configuración para @modyo/cli@3.6.2.
+# Preferido sobre .env (deprecado en versiones recientes del CLI).
+#
+# ⚠️  Este archivo está en .gitignore — puede contener tokens reales.
+#     Para ver la documentación de cada variable, ver .env.example.
+#
+# Comandos: push | preview | support-bundle
+# Docs: https://github.com/modyo/modyo-cli
+# =============================================================================
+
+# --- ✅ REQUERIDAS ------------------------------------------------------------
+
+MODYO_ACCOUNT_URL=https://my-account.modyo.cloud
+MODYO_TOKEN=my-api-token-here
+MODYO_WIDGET_NAME=my-widget-name
+
+# Usar UNO de los dos:
+MODYO_SITE_HOST=my-site
+# MODYO_SITE_ID=123
+
+# --- ⚙️  OPCIONALES: push ----------------------------------------------------
+
+# Versión de la plataforma Modyo (8 | 9 | 10) — Default: 9
+# Usado en: push, preview
+# MODYO_VERSION=9
+
+# Directorio que contiene el resultado del build — Default: dist
+# Usado en: push
+# MODYO_BUILD_DIRECTORY=dist
+
+# Nombre del script de build a ejecutar (definido en package.json) — Default: build
+# Usado en: push
+# MODYO_BUILD_COMMAND=build
+
+# Regex de archivos a excluir del bundle subido a la plataforma
+# Ejemplo: \.map$ (excluir source maps)
+# Usado en: push
+# MODYO_REGEX_EXCLUDE=
+
+# Regex para deshabilitar el procesamiento Liquid en archivos que coincidan
+# Útil cuando el widget usa sintaxis {{ }} que conflictúa con Liquid
+# Usado en: push
+# MODYO_DISABLE_LIQUID_REGEX=
+
+# --- ✅ REQUERIDA EN ESTA RAMA: push --zip (code splitting) -------------------
+
+MODYO_ZIP=true
+# MODYO_ZIP_ENTRY_JS=main.js
+# MODYO_ZIP_ENTRY_CSS=main.css
+
+# --- ⚙️  OPCIONALES: preview -------------------------------------------------
+
+# MODYO_LOCAL_PORT=8080
+# MODYO_LOCAL_DOM_ID=app
+# MODYO_LOCAL_ENTRY_JS=main.js
+# MODYO_LOCAL_MODULE=false
+
+# --- ⚙️  OPCIONALES: diagnóstico / support-bundle ----------------------------
+
+# MODYO_LOG=0
+# MODYO_LOG_DIR=.modyo-debug/
+# MODYO_LOG_KEEP=20

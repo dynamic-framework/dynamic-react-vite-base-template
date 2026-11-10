@@ -1,20 +1,68 @@
 {
-  "title": "Bienvenido a Dynamic Framework + React",
+  "title": "Bienvenido al template de widget Modyo",
+  "siteLang": "Este sitio está en: {lang}",
+  "home": {
+    "getStarted": "Empieza editando",
+    "links": {
+      "learn": {
+        "title": "Aprende",
+        "description": "¡Empieza con Dynamic Framework!"
+      },
+      "themes": {
+        "title": "Temas",
+        "description": "Aprende a crear una apariencia propia."
+      },
+      "components": {
+        "title": "Componentes",
+        "description": "Explora los componentes, construidos íntegramente en React."
+      }
+    }
+  },
   "states": {
     "loading": "Cargando...",
     "empty": {
-      "default": "No hay datos disponibles"
+      "default": "No hay elementos para mostrar"
     },
     "error": {
-      "default": "Error al cargar los datos",
+      "default": "Algo salió mal",
       "retry": "Reintentar"
     },
     "boundary": {
-      "title": "Ocurrió un error inesperado",
-      "description": "Lo sentimos, algo salió mal. Puedes intentar las siguientes opciones:",
+      "title": "Error de la aplicación",
+      "description": "Ocurrió un error inesperado. Por favor intenta de nuevo.",
       "retry": "Reintentar",
       "reload": "Recargar página",
-      "details": "Detalles técnicos (solo desarrollo)"
+      "details": "Ver detalles"
+    }
+  },
+  "config": {
+    "missing": {
+      "title": "Faltan variables de configuración",
+      "description": "El widget necesita estas variables del sitio en Modyo y no llegaron resueltas. Defínelas en las variables del sitio o activa vars.use-mocks para trabajar con datos de prueba."
+    }
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar...",
+    "noResults": "Sin resultados",
+    "placeholder": "Escribe para filtrar..."
+  },
+  "entities": {
+    "list": {
+      "title": "Entidades",
+      "create": "Crear",
+      "empty": "No hay entidades para mostrar",
+      "error": "No se pudieron cargar las entidades"
+    },
+    "create": {
+      "title": "Nueva entidad",
+      "name": "Nombre",
+      "error": "No se pudo crear la entidad"
     }
   }
 }

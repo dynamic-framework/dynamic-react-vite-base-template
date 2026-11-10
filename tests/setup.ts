@@ -1,28 +1,29 @@
 import '@testing-library/jest-dom/vitest';
 
-// Mock for window.matchMedia (required by some Dynamic UI components)
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: (query: string) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: () => {},
-    removeListener: () => {},
-    addEventListener: () => {},
-    removeEventListener: () => {},
-    dispatchEvent: () => false,
-  }),
-});
+// Mock window.matchMedia. La guarda es para los tests con entorno node
+// (tests/boundaries/distContents.test.ts), donde no hay window.
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+}
 
-// Mock for ResizeObserver
-global.ResizeObserver = class ResizeObserver {
+// Mock ResizeObserver (required by some Dynamic UI components)
+globalThis.ResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}
   disconnect() {}
 };
 
-// Silence React warnings in tests (optional)
+// Silence React warnings in tests
 const originalError = console.error;
 beforeAll(() => {
   console.error = (...args: unknown[]) => {
