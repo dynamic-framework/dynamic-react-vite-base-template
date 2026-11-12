@@ -27,9 +27,9 @@ dist-ssr
 yalc.lock
 
 .env
+.modyo
 
 # build directories
-build
 dist
 
 # modyo-cli artifacts

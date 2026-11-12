@@ -1,4 +1,5 @@
 {
   "src/**/*.{ts,tsx}": "eslint --fix",
+  "src/config/*.json": "eslint --fix",
   "src/**/*.scss": "stylelint --fix"
 }

@@ -4,21 +4,77 @@
   ],
   "reportInvalidScopeDisables": true,
   "reportNeedlessDisables": true,
+  "rules": {
+    "selector-class-pattern": [
+      "^widget-name(__[a-z0-9]+(-[a-z0-9]+)*)?(--[a-z0-9]+(-[a-z0-9]+)*)?$",
+      {
+        "message": "Las clases propias siguen el patrón .widget-name__bloque--variante (renombra widget-name al nombre de tu widget). Para el resto usa las utilidades de Dynamic."
+      }
+    ],
+    "color-no-hex": [
+      true,
+      {
+        "message": "No se permiten colores hex: usa var(--bs-*) de Dynamic, por ejemplo rgb(var(--bs-primary-rgb)). El color lo pone el theme del sitio."
+      }
+    ],
+    "color-named": [
+      "never",
+      {
+        "message": "No se permiten colores con nombre: usa var(--bs-*) de Dynamic, por ejemplo var(--bs-body-color). El color lo pone el theme del sitio."
+      }
+    ],
+    "property-disallowed-list": [
+      [
+        "font",
+        "font-family",
+        "border-radius",
+        "/^border-.*-radius$/"
+      ],
+      {
+        "message": "La tipografía y los radios vienen del theme: usa las clases de Dynamic (fs-*, fw-*, rounded-*) o propiedades sueltas con var(--bs-*), como font-size: var(--bs-body-font-size)."
+      }
+    ],
+    "at-rule-disallowed-list": [
+      [
+        "import"
+      ],
+      {
+        "message": "@import no se permite: usa @use para parciales propios. El CSS de Dynamic y el theme los carga el sitio."
+      }
+    ]
+  },
   "overrides": [
     {
       "files": [
         "**/*.scss"
       ],
       "rules": {
-        "declaration-property-value-disallowed-list": {
-          "border": "none",
-          "outline": "none"
-        },
+        "scss/no-dollar-variables": [
+          true,
+          {
+            "message": "No se permiten variables SCSS: usa custom properties var(--bs-*) de Dynamic, que el sitio puede ajustar desde :root."
+          }
+        ],
+        "declaration-property-value-disallowed-list": [
+          {
+            "border": [
+              "none"
+            ],
+            "outline": [
+              "none"
+            ],
+            "/.*/": [
+              "/\\$[a-z]/"
+            ]
+          },
+          {
+            "message": "Valor no permitido: en lugar de variables SCSS ($x) usa var(--bs-*) de Dynamic, y escribe border y outline con 0 en lugar de none."
+          }
+        ],
         "function-disallowed-list": [
           "lighten",
           "darken"
         ],
-        "property-disallowed-list": [],
         "scss/dollar-variable-default": [
           true,
           {

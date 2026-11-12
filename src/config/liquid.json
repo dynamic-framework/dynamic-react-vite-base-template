@@ -1,15 +1,17 @@
 {
   "site": {
-    "name": "My Site",
     "language": "en",
+    "name": "My Site",
     "url": "https://un.modyo.cloud/testing"
   },
   "vars": {
-    "currency-symbol": "$",
+    "api-base-url": "/api",
+    "currency-decimal": ",",
     "currency-precision": 2,
     "currency-separator": ".",
-    "currency-decimal": ",",
+    "currency-symbol": "$",
     "dashboard-path": "#",
-    "other-var": "Some value"
+    "other-var": "Some value",
+    "use-mocks": "true"
   }
 }
